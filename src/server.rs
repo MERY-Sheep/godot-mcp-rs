@@ -1,10 +1,10 @@
-//! MCPサーバー実装
+//! MCP Server Implementation
 
 use crate::tools::GodotTools;
 use anyhow::Result;
 use rmcp::{transport::stdio, ServiceExt};
 
-/// MCPサーバーを起動
+/// Start MCP Server
 pub async fn run() -> Result<()> {
     let tools = GodotTools::new();
 
@@ -14,7 +14,7 @@ pub async fn run() -> Result<()> {
 
     tracing::info!("MCP Server initialized: {:?}", server.peer_info());
 
-    // サーバーが終了するまで待機
+    // Wait until server terminates
     server.waiting().await?;
 
     Ok(())

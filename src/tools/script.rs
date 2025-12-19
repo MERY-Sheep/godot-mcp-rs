@@ -1,4 +1,4 @@
-//! スクリプト関連ツール - GDScript作成・アタッチ・分析
+//! Script Related Tools - GDScript Creation, Attachment & Analysis
 
 use rmcp::{model::CallToolResult, model::Content, ErrorData as McpError};
 
@@ -10,7 +10,7 @@ use crate::godot::gdscript::{generate_template, ExportVar, Function, FunctionPar
 use crate::godot::tscn::GodotScene;
 
 impl GodotTools {
-    /// create_script - スクリプト作成
+    /// create_script - Create script
     pub(super) async fn handle_create_script(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -39,7 +39,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// attach_script - スクリプトアタッチ
+    /// attach_script - Attach script
     pub(super) async fn handle_attach_script(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -57,11 +57,11 @@ impl GodotTools {
         let mut scene = GodotScene::parse(&content)
             .map_err(|e| McpError::internal_error(format!("Failed to parse scene: {}", e), None))?;
 
-        // スクリプトを外部リソースとして追加
+        // Add script as external resource
         let res_id = format!("{}_{}", req.node_path.replace("/", "_"), "script");
         scene.add_ext_resource(&res_id, "Script", &format!("res://{}", req.script_path));
 
-        // ノードにscriptプロパティを設定
+        // Set script property on node
         scene
             .set_property(
                 &req.node_path,
@@ -79,7 +79,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// read_script - スクリプト読み取り・パース
+    /// read_script - Read and parse script
     pub(super) async fn handle_read_script(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -126,7 +126,7 @@ impl GodotTools {
         )]))
     }
 
-    /// add_function - 関数追加
+    /// add_function - Add function
     pub(super) async fn handle_add_function(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -171,7 +171,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// add_export_var - エクスポート変数追加
+    /// add_export_var - Add export variable
     pub(super) async fn handle_add_export_var(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -204,7 +204,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// analyze_script - スクリプト分析
+    /// analyze_script - Analyze script
     pub(super) async fn handle_analyze_script(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,

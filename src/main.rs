@@ -1,6 +1,6 @@
 //! Godot MCP Server
 //!
-//! LLMがGodotプロジェクトを操作するためのMCPサーバー
+//! MCP server for LLMs to manipulate Godot projects
 
 mod godot;
 mod server;
@@ -11,7 +11,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // ロギング初期化（stderrに出力、stdoutはMCP通信用）
+    // Initialize logging (output to stderr, stdout is for MCP communication)
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
 
     tracing::info!("Godot MCP Server starting...");
 
-    // MCPサーバー起動
+    // Start MCP server
     server::run().await?;
 
     Ok(())
