@@ -1,0 +1,27 @@
+# Rust
+/target
+Cargo.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Godot MCP Server Temporary Files
+.godot_mcp_pid
+.godot_mcp_output
+
+# Test data (Optional, if you want to keep them local)
+/test_project/
+test_mcp.py
+test_mcp2.py
+
+# Claude/System files
+.claude/
+.gemini/
+.antigravity/
