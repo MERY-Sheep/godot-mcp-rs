@@ -178,15 +178,30 @@ impl GodotResource {
     }
 }
 
-/// 属性値を抽出 (例: type="Resource" から "Resource" を取得)
+/// 属性値を抽出
+///
+/// クォートされた値 (type="Resource") と クォートされていない値 (format=3) の両方に対応
 fn extract_attr(line: &str, attr: &str) -> Option<String> {
-    let pattern = format!("{}=\"", attr);
-    if let Some(start) = line.find(&pattern) {
-        let value_start = start + pattern.len();
+    // 1. クォートされた値を試す key="value"
+    let pattern_quoted = format!("{}=\"", attr);
+    if let Some(start) = line.find(&pattern_quoted) {
+        let value_start = start + pattern_quoted.len();
         if let Some(end) = line[value_start..].find('"') {
             return Some(line[value_start..value_start + end].to_string());
         }
     }
+
+    // 2. クォートされていない値を試す key=value
+    // 値は次のスペースか、行末、または ] まで
+    let pattern_unquoted = format!("{}=", attr);
+    if let Some(start) = line.find(&pattern_unquoted) {
+        let value_start = start + pattern_unquoted.len();
+        // 終了位置を探す (スペース, ], または行末)
+        let rest = &line[value_start..];
+        let end = rest.find(|c: char| c == ' ' || c == ']').unwrap_or(rest.len());
+        return Some(rest[..end].to_string());
+    }
+
     None
 }
 
