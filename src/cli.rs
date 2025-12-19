@@ -397,6 +397,109 @@ pub enum ToolCommands {
         #[arg(long, default_value = ".")]
         node_path: String,
     },
+
+    // === Live Animation Commands ===
+    /// Create a new animation
+    LiveCreateAnimation {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = "AnimationPlayer")]
+        player: String,
+        #[arg(long)]
+        name: String,
+        #[arg(long, default_value = "1.0")]
+        length: f32,
+    },
+
+    /// Add a track to an animation
+    LiveAddAnimationTrack {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = "AnimationPlayer")]
+        player: String,
+        #[arg(long)]
+        animation: String,
+        #[arg(long)]
+        track_path: String,
+        #[arg(long, default_value = "value")]
+        track_type: String,
+    },
+
+    /// Add a keyframe to an animation track
+    LiveAddAnimationKey {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = "AnimationPlayer")]
+        player: String,
+        #[arg(long)]
+        animation: String,
+        #[arg(long, default_value = "0")]
+        track: u32,
+        #[arg(long)]
+        time: f32,
+        #[arg(long)]
+        value: String,
+    },
+
+    /// Play an animation
+    LivePlayAnimation {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = "AnimationPlayer")]
+        player: String,
+        #[arg(long)]
+        animation: String,
+    },
+
+    /// Stop an animation
+    LiveStopAnimation {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = "AnimationPlayer")]
+        player: String,
+    },
+
+    /// List all animations
+    LiveListAnimations {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = "AnimationPlayer")]
+        player: String,
+    },
+
+    // === Live Debug Log Commands ===
+    /// Get editor debug log
+    LiveGetEditorLog {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = "50")]
+        lines: u32,
+    },
+
+    /// Clear editor debug log
+    LiveClearEditorLog {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+    },
+
+    // === Live Scene Instance Commands ===
+    /// Instantiate a scene (like placing a prefab)
+    LiveInstantiateScene {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long)]
+        scene_path: String,
+        #[arg(long, default_value = ".")]
+        parent: String,
+        #[arg(long)]
+        name: Option<String>,
+        #[arg(long)]
+        x: Option<f32>,
+        #[arg(long)]
+        y: Option<f32>,
+        #[arg(long)]
+        z: Option<f32>,
+    },
 }
 
 /// Execute CLI command
@@ -824,6 +927,145 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
                 }),
             )
             .await;
+        }
+
+        // === Live Animation Commands ===
+        ToolCommands::LiveCreateAnimation {
+            port,
+            player,
+            name,
+            length,
+        } => {
+            return run_live_command(
+                port,
+                "create_animation",
+                serde_json::json!({
+                    "player": player,
+                    "name": name,
+                    "length": length
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LiveAddAnimationTrack {
+            port,
+            player,
+            animation,
+            track_path,
+            track_type,
+        } => {
+            return run_live_command(
+                port,
+                "add_animation_track",
+                serde_json::json!({
+                    "player": player,
+                    "animation": animation,
+                    "track_path": track_path,
+                    "track_type": track_type
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LiveAddAnimationKey {
+            port,
+            player,
+            animation,
+            track,
+            time,
+            value,
+        } => {
+            return run_live_command(
+                port,
+                "add_animation_key",
+                serde_json::json!({
+                    "player": player,
+                    "animation": animation,
+                    "track": track,
+                    "time": time,
+                    "value": value
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LivePlayAnimation {
+            port,
+            player,
+            animation,
+        } => {
+            return run_live_command(
+                port,
+                "play_animation",
+                serde_json::json!({
+                    "player": player,
+                    "animation": animation
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LiveStopAnimation { port, player } => {
+            return run_live_command(
+                port,
+                "stop_animation",
+                serde_json::json!({
+                    "player": player
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LiveListAnimations { port, player } => {
+            return run_live_command(
+                port,
+                "list_animations",
+                serde_json::json!({
+                    "player": player
+                }),
+            )
+            .await;
+        }
+
+        // === Live Debug Log Commands ===
+        ToolCommands::LiveGetEditorLog { port, lines } => {
+            return run_live_command(
+                port,
+                "get_editor_log",
+                serde_json::json!({
+                    "lines": lines
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LiveClearEditorLog { port } => {
+            return run_live_command(port, "clear_editor_log", serde_json::json!({})).await;
+        }
+
+        // === Live Scene Instance Commands ===
+        ToolCommands::LiveInstantiateScene {
+            port,
+            scene_path,
+            parent,
+            name,
+            x,
+            y,
+            z,
+        } => {
+            let mut params = serde_json::json!({
+                "scene_path": scene_path,
+                "parent": parent
+            });
+
+            if let Some(n) = name {
+                params["name"] = serde_json::Value::String(n);
+            }
+
+            if x.is_some() || y.is_some() || z.is_some() {
+                params["position"] = serde_json::json!({
+                    "x": x.unwrap_or(0.0),
+                    "y": y.unwrap_or(0.0),
+                    "z": z.unwrap_or(0.0)
+                });
+            }
+
+            return run_live_command(port, "instantiate_scene", params).await;
         }
     };
 

@@ -5,9 +5,11 @@ extends EditorPlugin
 ## LLM からの HTTP リクエストを受け取り、エディター内でノード操作を実行
 
 const PORT = 6060
+const MAX_LOG_LINES = 1000
 
 var tcp_server: TCPServer
 var command_handler: Node
+var log_buffer: Array = []
 
 func _enter_tree():
 	# コマンドハンドラを読み込み
@@ -59,6 +61,7 @@ func _handle_connection(peer: StreamPeerTCP):
 		body = request_data.substr(double_newline_pos + 4)
 	
 	print("Godot MCP: Received body: ", body)
+	add_log("Received: " + body)
 	
 	# JSON をパース
 	var json = JSON.new()
@@ -82,3 +85,17 @@ func _handle_connection(peer: StreamPeerTCP):
 	
 	peer.put_data(response.to_utf8_buffer())
 	peer.disconnect_from_host()
+
+# === Log Buffer Methods ===
+
+func add_log(message: String) -> void:
+	var timestamp = Time.get_datetime_string_from_system()
+	log_buffer.append("[%s] %s" % [timestamp, message])
+	if log_buffer.size() > MAX_LOG_LINES:
+		log_buffer.pop_front()
+
+func get_log_buffer() -> Array:
+	return log_buffer
+
+func clear_log_buffer() -> void:
+	log_buffer.clear()
