@@ -1,25 +1,25 @@
-//! GDScriptパーサー・生成
+//! GDScript Parser and Generator
 //!
-//! GDScriptファイルの解析とテンプレート生成
+//! Handles parsing of GDScript files and generating script templates.
 
-/// GDScript ファイル構造
+/// GDScript file structure
 #[derive(Debug, Clone)]
 pub struct GDScript {
-    /// extends宣言
+    /// extends declaration
     pub extends: Option<String>,
-    /// class_name宣言
+    /// class_name declaration
     pub class_name: Option<String>,
-    /// エクスポート変数
+    /// exported variables
     pub exports: Vec<ExportVar>,
-    /// 通常の変数
+    /// regular variables
     pub variables: Vec<Variable>,
-    /// 関数
+    /// functions
     pub functions: Vec<Function>,
-    /// シグナル
+    /// signals
     pub signals: Vec<String>,
 }
 
-/// エクスポート変数
+/// Exported variable
 #[derive(Debug, Clone)]
 pub struct ExportVar {
     pub name: String,
@@ -27,7 +27,7 @@ pub struct ExportVar {
     pub default_value: Option<String>,
 }
 
-/// 変数
+/// Variable
 #[derive(Debug, Clone)]
 pub struct Variable {
     pub name: String,
@@ -35,7 +35,7 @@ pub struct Variable {
     pub default_value: Option<String>,
 }
 
-/// 関数
+/// Function
 #[derive(Debug, Clone)]
 pub struct Function {
     pub name: String,
@@ -44,7 +44,7 @@ pub struct Function {
     pub body: String,
 }
 
-/// 関数パラメータ
+/// Function parameter
 #[derive(Debug, Clone)]
 pub struct FunctionParam {
     pub name: String,
@@ -53,7 +53,7 @@ pub struct FunctionParam {
 }
 
 impl GDScript {
-    /// 新規スクリプトを作成
+    /// Create a new script
     pub fn new(extends: &str) -> Self {
         Self {
             extends: Some(extends.to_string()),
@@ -65,7 +65,7 @@ impl GDScript {
         }
     }
 
-    /// GDScriptをパース
+    /// Parse GDScript content
     pub fn parse(content: &str) -> Self {
         let mut script = GDScript {
             extends: None,
@@ -121,7 +121,7 @@ impl GDScript {
         script
     }
 
-    /// GDScriptコードを生成
+    /// Generate GDScript code
     pub fn to_gdscript(&self) -> String {
         let mut output = String::new();
 
@@ -228,23 +228,23 @@ impl GDScript {
         output
     }
 
-    /// 関数を追加
+    /// Add a function
     pub fn add_function(&mut self, func: Function) {
         self.functions.push(func);
     }
 
-    /// 変数を追加
+    /// Add a variable
     pub fn add_variable(&mut self, var: Variable) {
         self.variables.push(var);
     }
 
-    /// エクスポート変数を追加
+    /// Add an exported variable
     pub fn add_export(&mut self, var: ExportVar) {
         self.exports.push(var);
     }
 }
 
-/// @export var をパース
+/// Parse @export var
 fn parse_export_var(line: &str) -> Option<ExportVar> {
     let var_start = line.find("var ")? + 4;
     let rest = &line[var_start..];
@@ -283,7 +283,7 @@ fn parse_export_var(line: &str) -> Option<ExportVar> {
     })
 }
 
-/// var をパース
+/// Parse var
 fn parse_var(line: &str) -> Option<Variable> {
     let rest = &line[4..];
 
@@ -321,7 +321,7 @@ fn parse_var(line: &str) -> Option<Variable> {
     })
 }
 
-/// 関数をパース
+/// Parse a function
 fn parse_function(lines: &[&str], start: usize) -> (Option<Function>, usize) {
     let line = lines[start].trim();
 
@@ -339,7 +339,7 @@ fn parse_function(lines: &[&str], start: usize) -> (Option<Function>, usize) {
     let name = line[func_start..paren_start].trim().to_string();
     let params_str = &line[paren_start + 1..paren_end];
 
-    // パラメータをパース
+    // Parse parameters
     let params: Vec<FunctionParam> = if params_str.trim().is_empty() {
         Vec::new()
     } else {
@@ -375,7 +375,7 @@ fn parse_function(lines: &[&str], start: usize) -> (Option<Function>, usize) {
             .collect()
     };
 
-    // 戻り値型
+    // Return type
     let return_type = if let Some(arrow) = line.find("->") {
         let colon = line.rfind(':').unwrap_or(line.len());
         Some(line[arrow + 2..colon].trim().to_string())
@@ -383,7 +383,7 @@ fn parse_function(lines: &[&str], start: usize) -> (Option<Function>, usize) {
         None
     };
 
-    // 関数本体を収集
+    // Collect function body
     let mut body_lines = Vec::new();
     let mut i = start + 1;
     while i < lines.len() {
@@ -416,7 +416,7 @@ fn parse_function(lines: &[&str], start: usize) -> (Option<Function>, usize) {
     )
 }
 
-/// スクリプトテンプレートを生成
+/// Generate script from template
 pub fn generate_template(extends: &str) -> String {
     match extends {
         "CharacterBody3D" => TEMPLATE_CHARACTER_BODY_3D.to_string(),

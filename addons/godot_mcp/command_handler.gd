@@ -1,8 +1,8 @@
 @tool
 extends Node
 
-## コマンドハンドラ
-## MCP からのコマンドを受け取り、エディター API で実行
+## Command Handler
+## Receives commands from MCP and executes them using Editor APIs.
 
 var plugin: EditorPlugin
 
@@ -74,7 +74,7 @@ func _handle_add_node(params: Dictionary) -> Dictionary:
 	var node_type = params.get("node_type", "Node")
 	var node_name = params.get("name", "NewNode")
 	
-	# ノードを作成
+	# Create node
 	var new_node = ClassDB.instantiate(node_type)
 	if not new_node:
 		return {"error": "Failed to instantiate node type: " + node_type}
@@ -82,7 +82,7 @@ func _handle_add_node(params: Dictionary) -> Dictionary:
 	new_node.name = node_name
 	new_node.set_owner(root)
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Add Node via LLM: " + node_name)
 	ur.add_do_method(parent, "add_child", new_node)
@@ -108,7 +108,7 @@ func _handle_remove_node(params: Dictionary) -> Dictionary:
 	
 	var parent = node.get_parent()
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Remove Node via LLM: " + node.name)
 	ur.add_do_method(parent, "remove_child", node)
@@ -136,7 +136,7 @@ func _handle_set_property(params: Dictionary) -> Dictionary:
 	
 	var old_value = node.get(property)
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Set Property via LLM: " + property)
 	ur.add_do_property(node, property, value)
@@ -211,15 +211,15 @@ func _handle_connect_signal(params: Dictionary) -> Dictionary:
 	if not target:
 		return {"error": "Target node not found: " + target_path}
 	
-	# シグナルが存在するか確認
+	# Check if signal exists
 	if not source.has_signal(signal_name):
 		return {"error": "Signal not found: " + signal_name + " on " + source_path}
 	
-	# 既に接続されているか確認
+	# Check if already connected
 	if source.is_connected(signal_name, Callable(target, method_name)):
 		return {"error": "Signal already connected"}
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Connect Signal via LLM: " + signal_name)
 	ur.add_do_method(source, "connect", signal_name, Callable(target, method_name))
@@ -257,11 +257,11 @@ func _handle_disconnect_signal(params: Dictionary) -> Dictionary:
 	if not target:
 		return {"error": "Target node not found: " + target_path}
 	
-	# 接続されているか確認
+	# Check if connected
 	if not source.is_connected(signal_name, Callable(target, method_name)):
 		return {"error": "Signal is not connected"}
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Disconnect Signal via LLM: " + signal_name)
 	ur.add_do_method(source, "disconnect", signal_name, Callable(target, method_name))
@@ -298,7 +298,7 @@ func _handle_list_signals(params: Dictionary) -> Dictionary:
 			sig_info["args"].append(arg["name"])
 		signals.append(sig_info)
 	
-	# 接続情報も取得
+	# Get connection information
 	var connections = []
 	for conn in node.get_incoming_connections():
 		connections.append({
@@ -338,7 +338,7 @@ func _handle_get_properties(params: Dictionary) -> Dictionary:
 	var properties = {}
 	for prop in node.get_property_list():
 		var name = prop["name"]
-		# 内部プロパティはスキップ
+		# Skip internal properties
 		if name.begins_with("_") or prop["usage"] & PROPERTY_USAGE_INTERNAL:
 			continue
 		
@@ -423,10 +423,10 @@ func _handle_duplicate_node(params: Dictionary) -> Dictionary:
 	
 	duplicate.owner = root
 	
-	# 子ノードのownerも設定
+	# Set owner of child nodes recursively
 	_set_owner_recursive(duplicate, root)
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Duplicate Node via LLM: " + node.name)
 	ur.add_do_method(parent, "add_child", duplicate)
@@ -465,7 +465,7 @@ func _handle_rename_node(params: Dictionary) -> Dictionary:
 	
 	var old_name = node.name
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Rename Node via LLM: " + old_name + " -> " + new_name)
 	ur.add_do_property(node, "name", new_name)
@@ -504,7 +504,7 @@ func _handle_reparent_node(params: Dictionary) -> Dictionary:
 	if old_parent == new_parent:
 		return {"error": "Node is already a child of the specified parent"}
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Reparent Node via LLM: " + node.name)
 	ur.add_do_method(old_parent, "remove_child", node)
@@ -656,8 +656,8 @@ func _handle_list_animations(params: Dictionary) -> Dictionary:
 
 func _handle_get_editor_log(params: Dictionary) -> Dictionary:
 	var lines = params.get("lines", 50)
-	# Godot 4.x ではエディターログへの直接アクセスは制限されている
-	# 代替として、最近のプラグインログを返す
+	# In Godot 4.x, direct access to the editor log is restricted.
+	# As an alternative, we return the recent plugin logs.
 	return {
 		"success": true,
 		"lines": lines,
@@ -666,7 +666,7 @@ func _handle_get_editor_log(params: Dictionary) -> Dictionary:
 	}
 
 func _handle_clear_editor_log(params: Dictionary) -> Dictionary:
-	# ログクリアは制限されている
+	# Log clearing is restricted.
 	return {"success": true, "cleared": true, "note": "Log buffer cleared (limited functionality)"}
 
 # === Task D: Instantiate Scene ===
@@ -684,25 +684,25 @@ func _handle_instantiate_scene(params: Dictionary) -> Dictionary:
 	if scene_path == "":
 		return {"error": "scene_path is required"}
 	
-	# res:// プレフィックスを追加
+	# Add res:// prefix
 	if not scene_path.begins_with("res://"):
 		scene_path = "res://" + scene_path
 	
-	# シーンを読み込み
+	# Load scene
 	var packed_scene = load(scene_path)
 	if not packed_scene:
 		return {"error": "Failed to load scene: " + scene_path}
 	
-	# インスタンス化
+	# Instantiate
 	var instance = packed_scene.instantiate()
 	if not instance:
 		return {"error": "Failed to instantiate scene"}
 	
-	# 名前を設定
+	# Set name
 	if instance_name != "":
 		instance.name = instance_name
 	
-	# 位置を設定（3Dノードの場合）
+	# Set position (for 3D/2D nodes)
 	if position and instance is Node3D:
 		instance.position = Vector3(
 			position.get("x", 0),
@@ -715,13 +715,13 @@ func _handle_instantiate_scene(params: Dictionary) -> Dictionary:
 			position.get("y", 0)
 		)
 	
-	# 親ノードを取得
+	# Get parent node
 	var parent = root.get_node_or_null(parent_path) if parent_path != "." else root
 	if not parent:
 		instance.queue_free()
 		return {"error": "Parent node not found: " + parent_path}
 	
-	# Undo/Redo 対応
+	# Undo/Redo support
 	var ur = plugin.get_undo_redo()
 	ur.create_action("Instantiate Scene via LLM: " + scene_path)
 	ur.add_do_method(parent, "add_child", instance)

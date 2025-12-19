@@ -2,7 +2,7 @@
 extends EditorPlugin
 
 ## Godot MCP Plugin
-## LLM からの HTTP リクエストを受け取り、エディター内でノード操作を実行
+## Receives HTTP requests from LLM and performs node operations within the editor.
 
 const PORT = 6060
 const MAX_LOG_LINES = 1000
@@ -12,13 +12,13 @@ var command_handler: Node
 var log_buffer: Array = []
 
 func _enter_tree():
-	# コマンドハンドラを読み込み
+	# Load command handler
 	var handler_script = load("res://addons/godot_mcp/command_handler.gd")
 	command_handler = handler_script.new()
 	command_handler.plugin = self
 	add_child(command_handler)
 	
-	# TCP サーバー起動
+	# Start TCP server
 	tcp_server = TCPServer.new()
 	var err = tcp_server.listen(PORT)
 	if err != OK:
@@ -41,10 +41,10 @@ func _process(_delta):
 			_handle_connection(peer)
 
 func _handle_connection(peer: StreamPeerTCP):
-	# リクエストを読み取り
+	# Read request
 	peer.set_no_delay(true)
 	
-	# 接続待機（最大1秒）
+	# Wait for connection (max 1 second)
 	var start_time = Time.get_ticks_msec()
 	while peer.get_available_bytes() == 0:
 		if Time.get_ticks_msec() - start_time > 1000:
@@ -54,7 +54,7 @@ func _handle_connection(peer: StreamPeerTCP):
 	
 	var request_data = peer.get_utf8_string(peer.get_available_bytes())
 	
-	# HTTP リクエストをパース（ヘッダーとボディを分離）
+	# Parse HTTP request (separate header and body)
 	var double_newline_pos = request_data.find("\r\n\r\n")
 	var body = ""
 	if double_newline_pos != -1:
@@ -63,7 +63,7 @@ func _handle_connection(peer: StreamPeerTCP):
 	print("Godot MCP: Received body: ", body)
 	add_log("Received: " + body)
 	
-	# JSON をパース
+	# Parse JSON
 	var json = JSON.new()
 	var parse_result = json.parse(body)
 	
@@ -75,7 +75,7 @@ func _handle_connection(peer: StreamPeerTCP):
 	else:
 		response_body = JSON.stringify({"error": "Invalid JSON"})
 	
-	# HTTP レスポンスを送信
+	# Send HTTP response
 	var response = "HTTP/1.1 200 OK\r\n"
 	response += "Content-Type: application/json\r\n"
 	response += "Content-Length: %d\r\n" % response_body.length()

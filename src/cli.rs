@@ -1,4 +1,4 @@
-//! CLI モード - ターミナル/スクリプトからの直接操作
+//! CLI Mode - Direct operation from terminal or scripts.
 
 use crate::tools::GodotTools;
 use clap::{Parser, Subcommand};
@@ -1071,7 +1071,7 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
 
     match result {
         Ok(tool_result) => {
-            // 結果を表示
+            // Display results
             for content in &tool_result.content {
                 if let Some(text) = content.raw.as_text() {
                     println!("{}", text.text);
@@ -1109,7 +1109,7 @@ async fn run_live_command(
     match response {
         Ok(resp) => {
             let text = resp.text().await.unwrap_or_default();
-            // パースしてフォーマット出力
+            // Parse and format output
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
                 println!("{}", serde_json::to_string_pretty(&json)?);
             } else {

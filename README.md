@@ -4,60 +4,62 @@
 [![Rust](https://img.shields.io/badge/Rust-1.70+-blue.svg)](https://www.rust-lang.org)
 [![Godot](https://img.shields.io/badge/Godot-4.x-green.svg)](https://godotengine.org)
 
-Godot ゲームエンジンのプロジェクトを AI (LLM) から高度に操作・分析するための Model Context Protocol (MCP) サーバーです。
-ファイルベースの解析に加え、エディタープラグインを介した**リアルタイム (live) 操作**を強力にサポートします。
+An MCP server for highly advanced manipulation and analysis of Godot game engine projects from AI (LLMs).
+AI can integrally support everything from scene construction and GDScript editing to project execution and debugging.
 
-## 主な特徴
+[日本語版はこちら (Japanese version)](README.ja.md)
 
-- **リアルタイム操作 (live-\*)**: エディターを開いたまま、ノードの追加・削除・プロパティ変更・シグナル接続・アニメーション作成を即座に反映。
-- **完全な Undo/Redo サポート**: AI による live 操作はすべて Godot エディターの Undo 履歴に残るため、安心して試行錯誤が可能。
-- **強力なパーサー**: `.tscn`, `.gd`, `.tres` 形式を解析し、エディターを閉じた状態でも構造的な変更を可能にします。
-- **豊富なツールセット**: 全 56 種のツールにより、開発の全工程（構築・分析・実行・デバッグ）を AI が統合的にサポート。
-- **プロジェクト実行制御**: AI が自らゲームを起動し、ログを確認して修正するデバッグループが可能。
+## Key Features
 
-## ツールセット (全 56 種)
+- **Editor & Execution Control (New! 🚀)**: AI can launch the game, check logs, and debug.
+- **Powerful Parser**: Analyzes `.tscn`, `.gd`, and `.tres` formats, enabling structural changes.
+- **Rich Toolset**: 34 tools covering everything from file exploration to advanced scene diffing and project validation.
+- **Template Generation**: Instant scene construction from templates like `player_3d`, `enemy_3d`, `ui_menu`, etc.
+- **Fast Rust Implementation**: Low-latency synchronous and asynchronous processing based on the official `rmcp` SDK.
 
-詳細な使い方は [USAGE.md](docs/USAGE.md) を参照してください。
+## Toolset (34 tools)
 
-### ✨ リアルタイム操作 (live-\*)
+Refer to [USAGE.en.md](docs/USAGE.en.md) for detailed usage.
 
-Godot エディターとの直接連携により、UI 上で即座に変更を確認できます。
+### 🎮 Editor & Execution Control
 
-- ノード操作: `add`, `remove`, `rename`, `duplicate`, `reparent`
-- プロパティ: `get-properties`, `set-property`
-- 構築: `get-tree`, `instantiate-scene`, `save-scene`
-- シグナル: `connect`, `disconnect`, `list-signals`
-- アニメーション: `create`, `add-track`, `add-key`, `play`, `stop`, `list`
-- デバッグ: `get-editor-log`, `clear-editor-log`
+- Run project (`run_project`), Stop project (`stop_project`)
+- Capture debug output (`get_debug_output`)
+- Launch editor, Check version
 
-### 🏗️ ファイルベース操作
+### 📁 Project Analysis
 
-エディターを開かずにファイルを直接操作・分析します。
+- **Project Stats** (`get_project_stats`), **Validation** (`validate_project`)
+- **Node Type Info** (`get_node_type_info`) - Details on 25+ node types
 
-- シーン構築 (`create_scene`, `create_scene_from_template`)
-- 階層解析 (`read_scene`, `export_scene_as_json`, `compare_scenes`)
-- スクリプト編集 (`add_function`, `add_export_var`, `analyze_script`)
+### 🏗️ Scene Manipulation (.tscn)
 
-### 🎮 プロジェクト実行・分析
+- **Template Generation** (`create_scene_from_template`) - 5 templates
+- Add/Remove/Set nodes, Hierarchical JSON export, Diff comparison
 
-- プロジェクトの実行 (`run_project`)・停止 (`stop_project`)
-- 統計解析 (`get_project_stats`)、検証 (`validate_project`)
-- ノード型情報 (`get_node_type_info`)
+### 📜 Script Manipulation (.gd)
 
-## インストールとセットアップ
+- Automatic insertion of functions and `@export` variables, static analysis
 
-### 1. ビルド
+### 💎 Resource Manipulation (.tres)
+
+- Resource parsing
+
+## Quick Start
+
+### 1. Build
 
 ```bash
 cargo build --release
 ```
 
-### 2. Godot プラグインのインストール
+### 2. Environment Variables (Optional)
 
-1. `addons/godot_mcp` ディレクトリをあなたのプロジェクトの `addons/` フォルダにコピーします。
-2. Project Settings -> Plugins から **Godot MCP** を有効にします。
+```bash
+set GODOT_PATH=C:\path\to\godot.exe
+```
 
-### 3. Claude Desktop 設定
+### 3. Claude Desktop Configuration
 
 `%APPDATA%\Claude\claude_desktop_config.json`:
 
@@ -65,27 +67,12 @@ cargo build --release
 {
   "mcpServers": {
     "godot": {
-      "command": "C:\\path\\to\\godot-mcp-rs.exe",
-      "env": {
-        "GODOT_PATH": "C:\\path\\to\\godot.exe"
-      }
+      "command": "C:\\Work\\godot-mcp-rs\\target\\release\\godot-mcp-rs.exe"
     }
   }
 }
 ```
 
-## CLI モード
-
-MCP サーバーとしてだけでなく、単体の CLI ツールとしても利用可能です。
-
-```bash
-# リアルタイムでノードを追加
-godot-mcp-rs tool live-add-node --name "Bot" --node-type "CharacterBody3D"
-
-# プロジェクトの状態を確認
-godot-mcp-rs tool get-project-stats --project ./my_game
-```
-
-## ライセンス
+## License
 
 MIT

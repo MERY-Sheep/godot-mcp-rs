@@ -1,27 +1,27 @@
-//! .tres リソースファイルパーサー
+//! .tres resource file parser
 //!
-//! Godotリソースファイル(.tres)の解析
+//! Parsing Godot resource files (.tres)
 
 use std::collections::HashMap;
 
-/// Godotリソース (.tres)
+/// Godot Resource (.tres)
 #[derive(Debug, Clone)]
 pub struct GodotResource {
-    /// リソースタイプ (例: "Resource", "PackedScene")
+    /// Resource type (e.g., "Resource", "PackedScene")
     pub resource_type: String,
     /// load_steps
     pub load_steps: Option<i32>,
     /// format version
     pub format: Option<i32>,
-    /// 外部リソース参照
+    /// External resource referral
     pub ext_resources: Vec<ExtResourceRef>,
-    /// サブリソース
+    /// Sub-resources
     pub sub_resources: Vec<SubResourceDef>,
-    /// メインリソースのプロパティ
+    /// Main resource properties
     pub properties: HashMap<String, String>,
 }
 
-/// 外部リソース参照
+/// External resource reference
 #[derive(Debug, Clone)]
 pub struct ExtResourceRef {
     pub id: String,
@@ -29,7 +29,7 @@ pub struct ExtResourceRef {
     pub path: String,
 }
 
-/// サブリソース定義
+/// Sub-resource definition
 #[derive(Debug, Clone)]
 pub struct SubResourceDef {
     pub id: String,
@@ -38,7 +38,7 @@ pub struct SubResourceDef {
 }
 
 impl GodotResource {
-    /// .tresファイルをパース
+    /// Parse a .tres file
     pub fn parse(content: &str) -> Result<Self, String> {
         let mut resource = GodotResource {
             resource_type: String::new(),
@@ -59,13 +59,13 @@ impl GodotResource {
         while i < lines.len() {
             let line = lines[i].trim();
 
-            // 空行・コメントをスキップ
+            // Skip empty lines and comments
             if line.is_empty() || line.starts_with(';') {
                 i += 1;
                 continue;
             }
 
-            // [gd_resource ...] ヘッダー
+            // [gd_resource ...] header
             if line.starts_with("[gd_resource") {
                 if let Some(rt) = extract_attr(line, "type") {
                     resource.resource_type = rt;
@@ -94,7 +94,7 @@ impl GodotResource {
             }
             // [sub_resource ...]
             else if line.starts_with("[sub_resource") {
-                // 前のサブリソースを保存
+                // Save previous sub-resource
                 if !current_sub_id.is_empty() {
                     resource.sub_resources.push(SubResourceDef {
                         id: current_sub_id.clone(),
@@ -110,7 +110,7 @@ impl GodotResource {
             }
             // [resource]
             else if line.starts_with("[resource]") {
-                // 前のサブリソースを保存
+                // Save previous sub-resource
                 if !current_sub_id.is_empty() {
                     resource.sub_resources.push(SubResourceDef {
                         id: current_sub_id.clone(),
@@ -122,7 +122,7 @@ impl GodotResource {
                 }
                 current_section = Some("resource".to_string());
             }
-            // プロパティ行
+            // Property line
             else if let Some(eq_pos) = line.find(" = ") {
                 let key = line[..eq_pos].trim().to_string();
                 let value = line[eq_pos + 3..].trim().to_string();
@@ -141,7 +141,7 @@ impl GodotResource {
             i += 1;
         }
 
-        // 最後のサブリソースを保存
+        // Save the last sub-resource
         if !current_sub_id.is_empty() {
             resource.sub_resources.push(SubResourceDef {
                 id: current_sub_id,
@@ -157,7 +157,7 @@ impl GodotResource {
         Ok(resource)
     }
 
-    /// リソースをJSON形式に変換
+    /// Convert resource to JSON format
     pub fn to_json(&self) -> serde_json::Value {
         serde_json::json!({
             "type": self.resource_type,
@@ -178,13 +178,22 @@ impl GodotResource {
     }
 }
 
-/// 属性値を抽出 (例: type="Resource" から "Resource" を取得)
+/// Extract attribute value (e.g., get "Resource" from type="Resource")
 fn extract_attr(line: &str, attr: &str) -> Option<String> {
-    let pattern = format!("{}=\"", attr);
+    let pattern = format!("{}=", attr);
     if let Some(start) = line.find(&pattern) {
-        let value_start = start + pattern.len();
-        if let Some(end) = line[value_start..].find('"') {
-            return Some(line[value_start..value_start + end].to_string());
+        let rest = &line[start + pattern.len()..];
+        if rest.starts_with('"') {
+            let rest = &rest[1..];
+            if let Some(end) = rest.find('"') {
+                return Some(rest[..end].to_string());
+            }
+        } else {
+            // Unquoted value until space or closing bracket
+            let end = rest
+                .find(|c: char| c == ' ' || c == ']')
+                .unwrap_or(rest.len());
+            return Some(rest[..end].to_string());
         }
     }
     None

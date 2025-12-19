@@ -1,4 +1,4 @@
-//! シーン関連ツール - シーン作成・編集・分析
+//! Scene-related tools - Creation, editing, and analysis
 
 use rmcp::{model::CallToolResult, model::Content, ErrorData as McpError};
 use std::collections::HashMap;
@@ -12,7 +12,7 @@ use super::{
 use crate::godot::tscn::{GodotScene, SceneNode};
 
 impl GodotTools {
-    /// create_scene - シーン作成
+    /// create_scene - Create a scene
     pub async fn handle_create_scene(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -48,7 +48,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// read_scene - シーン読み取り
+    /// read_scene - Read a scene
     pub async fn handle_read_scene(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -85,7 +85,7 @@ impl GodotTools {
         )]))
     }
 
-    /// add_node - ノード追加
+    /// add_node - Add a node
     pub async fn handle_add_node(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -119,7 +119,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// remove_node - ノード削除
+    /// remove_node - Remove a node
     pub async fn handle_remove_node(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -150,7 +150,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// set_node_property - プロパティ設定
+    /// set_node_property - Set a node property
     pub async fn handle_set_node_property(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -181,7 +181,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// get_node_tree - ノードツリー取得
+    /// get_node_tree - Get node tree
     pub async fn handle_get_node_tree(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -218,7 +218,7 @@ impl GodotTools {
         Ok(CallToolResult::success(vec![Content::text(tree)]))
     }
 
-    /// validate_tscn - シーンバリデーション
+    /// validate_tscn - Validate scene
     pub async fn handle_validate_tscn(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -238,7 +238,7 @@ impl GodotTools {
                 let mut issues: Vec<String> = Vec::new();
 
                 if scene.nodes.is_empty() {
-                    issues.push("ルートノードがありません".to_string());
+                    issues.push("Root node missing".to_string());
                 }
 
                 for node in &scene.nodes {
@@ -249,7 +249,7 @@ impl GodotTools {
                                 .iter()
                                 .any(|n| n.name == parent.split('/').next().unwrap_or(""))
                         {
-                            // 将来の検証用
+                            // For future validation
                         }
                     }
                 }
@@ -259,7 +259,7 @@ impl GodotTools {
                         "valid": true,
                         "node_count": scene.nodes.len(),
                         "resource_count": scene.ext_resources.len(),
-                        "message": "バリデーション成功"
+                        "message": "Validation successful"
                     })
                 } else {
                     serde_json::json!({
@@ -285,7 +285,7 @@ impl GodotTools {
         }
     }
 
-    /// copy_scene - シーンコピー
+    /// copy_scene - Copy a scene
     pub async fn handle_copy_scene(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -312,7 +312,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// get_scene_metadata - シーンメタデータ取得
+    /// get_scene_metadata - Get scene metadata
     pub async fn handle_get_scene_metadata(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -358,7 +358,7 @@ impl GodotTools {
         )]))
     }
 
-    /// compare_scenes - シーン比較
+    /// compare_scenes - Compare scenes
     pub async fn handle_compare_scenes(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -458,7 +458,7 @@ impl GodotTools {
         )]))
     }
 
-    /// export_scene_as_json - シーンJSONエクスポート
+    /// export_scene_as_json - Export scene as JSON
     pub async fn handle_export_scene_as_json(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -537,7 +537,7 @@ impl GodotTools {
         )]))
     }
 
-    /// batch_add_nodes - バッチノード追加
+    /// batch_add_nodes - Batch add nodes
     pub async fn handle_batch_add_nodes(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -580,7 +580,7 @@ impl GodotTools {
         ))]))
     }
 
-    /// create_scene_from_template - テンプレートからシーン作成
+    /// create_scene_from_template - Create scene from template
     pub async fn handle_create_scene_from_template(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -600,7 +600,7 @@ impl GodotTools {
                 .to_string()
         });
 
-        // テンプレートに基づいてシーンを構築
+        // Build scene based on template
         let (root_type, nodes) = match req.template.as_str() {
             "player_3d" => (
                 "CharacterBody3D",

@@ -1,6 +1,6 @@
-//! .tscnファイルパーサー
+//! .tscn file parser
 //!
-//! Godotのテキストシーン形式をパース・生成する
+//! Parses and generates Godot's text scene format
 
 use std::collections::HashMap;
 use thiserror::Error;
@@ -13,24 +13,24 @@ pub enum TscnError {
     NodeNotFound(String),
 }
 
-/// Godotシーン
+/// Godot Scene
 #[derive(Debug, Clone)]
 pub struct GodotScene {
-    /// シーンヘッダー情報
+    /// Scene header information
     pub format: u32,
     pub uid: Option<String>,
 
-    /// 外部リソース
+    /// External resources
     pub ext_resources: Vec<ExtResource>,
 
-    /// 内部リソース
+    /// Sub-resources
     pub sub_resources: Vec<SubResource>,
 
-    /// ノード一覧
+    /// List of nodes
     pub nodes: Vec<SceneNode>,
 }
 
-/// 外部リソース参照
+/// External resource reference
 #[derive(Debug, Clone)]
 pub struct ExtResource {
     pub id: String,
@@ -38,7 +38,7 @@ pub struct ExtResource {
     pub path: String,
 }
 
-/// 内部リソース
+/// Sub-resource
 #[derive(Debug, Clone)]
 pub struct SubResource {
     pub id: String,
@@ -46,7 +46,7 @@ pub struct SubResource {
     pub properties: HashMap<String, String>,
 }
 
-/// シーンノード
+/// Scene node
 #[derive(Debug, Clone)]
 pub struct SceneNode {
     pub name: String,
@@ -56,7 +56,7 @@ pub struct SceneNode {
 }
 
 impl GodotScene {
-    /// 新規シーンを作成
+    /// Create a new scene
     pub fn new(root_name: &str, root_type: &str) -> Self {
         Self {
             format: 3,
@@ -72,7 +72,7 @@ impl GodotScene {
         }
     }
 
-    /// .tscnファイルをパース
+    /// Parse a .tscn file
     pub fn parse(content: &str) -> Result<Self, TscnError> {
         let mut scene = GodotScene {
             format: 3,
@@ -93,9 +93,9 @@ impl GodotScene {
                 continue;
             }
 
-            // セクションヘッダー
+            // Section header
             if line.starts_with('[') && line.ends_with(']') {
-                // 前のノードを保存
+                // Save previous node
                 if let Some(mut node) = current_node.take() {
                     node.properties = current_properties.clone();
                     scene.nodes.push(node);
@@ -105,7 +105,7 @@ impl GodotScene {
                 let section_content = &line[1..line.len() - 1];
 
                 if section_content.starts_with("gd_scene") {
-                    // ヘッダーをパース
+                    // Parse header
                     if let Some(format) = extract_attr(section_content, "format") {
                         scene.format = format.parse().unwrap_or(3);
                     }
@@ -125,14 +125,14 @@ impl GodotScene {
                     current_section = Some("node");
                 }
             } else if current_section == Some("node") {
-                // プロパティ行
+                // Property line
                 if let Some((key, value)) = line.split_once(" = ") {
                     current_properties.insert(key.to_string(), value.to_string());
                 }
             }
         }
 
-        // 最後のノードを保存
+        // Save the last node
         if let Some(mut node) = current_node.take() {
             node.properties = current_properties;
             scene.nodes.push(node);
@@ -141,11 +141,11 @@ impl GodotScene {
         Ok(scene)
     }
 
-    /// .tscn形式に変換
+    /// Convert to .tscn format
     pub fn to_tscn(&self) -> String {
         let mut output = String::new();
 
-        // ヘッダー
+        // Header
         let load_steps = 1 + self.ext_resources.len() + self.sub_resources.len();
         output.push_str(&format!(
             "[gd_scene load_steps={} format={}",
@@ -156,7 +156,7 @@ impl GodotScene {
         }
         output.push_str("]\n\n");
 
-        // 外部リソース
+        // External resources
         for res in &self.ext_resources {
             output.push_str(&format!(
                 "[ext_resource type=\"{}\" path=\"{}\" id=\"{}\"]\n",
@@ -167,7 +167,7 @@ impl GodotScene {
             output.push('\n');
         }
 
-        // ノード
+        // Nodes
         for node in &self.nodes {
             output.push_str(&format!(
                 "[node name=\"{}\" type=\"{}\"",
@@ -187,12 +187,12 @@ impl GodotScene {
         output
     }
 
-    /// ノードを追加
+    /// Add a node
     pub fn add_node(&mut self, node: SceneNode) {
         self.nodes.push(node);
     }
 
-    /// 外部リソースを追加
+    /// Add an external resource
     pub fn add_ext_resource(&mut self, id: &str, resource_type: &str, path: &str) {
         self.ext_resources.push(ExtResource {
             id: id.to_string(),
@@ -201,7 +201,7 @@ impl GodotScene {
         });
     }
 
-    /// プロパティを設定
+    /// Set a property
     pub fn set_property(
         &mut self,
         node_path: &str,
@@ -230,7 +230,7 @@ impl GodotScene {
         }
     }
 
-    /// ノードを削除
+    /// Remove a node
     pub fn remove_node(&mut self, node_path: &str) -> Result<(), String> {
         if node_path == "." {
             return Err("Cannot remove root node".to_string());
@@ -238,7 +238,7 @@ impl GodotScene {
 
         let initial_len = self.nodes.len();
 
-        // ノードを検索して削除
+        // Search and remove node
         self.nodes.retain(|n| {
             let full_path = n
                 .parent
@@ -254,7 +254,7 @@ impl GodotScene {
             full_path != node_path && n.name != node_path
         });
 
-        // 子ノードも削除（親パスがnode_pathで始まるもの）
+        // Also remove child nodes (those whose parent path starts with node_path)
         self.nodes.retain(|n| {
             if let Some(ref parent) = n.parent {
                 !parent.starts_with(node_path) && parent != node_path
@@ -270,17 +270,17 @@ impl GodotScene {
         }
     }
 
-    /// フォーマットバージョン
+    /// Format version
     pub fn format_version(&self) -> u32 {
         self.format
     }
 
-    /// ロードステップ数
+    /// Number of load steps
     pub fn load_steps(&self) -> usize {
         1 + self.ext_resources.len() + self.sub_resources.len()
     }
 
-    /// 外部リソース一覧（JSON用）
+    /// List of external resources (for JSON)
     pub fn external_resources(&self) -> Vec<serde_json::Value> {
         self.ext_resources
             .iter()
@@ -295,7 +295,7 @@ impl GodotScene {
     }
 }
 
-/// 属性値を抽出
+/// Extract attribute value
 fn extract_attr<'a>(content: &'a str, attr: &str) -> Option<&'a str> {
     let pattern = format!("{}=", attr);
     content.find(&pattern).map(|start| {
@@ -309,7 +309,7 @@ fn extract_attr<'a>(content: &'a str, attr: &str) -> Option<&'a str> {
     })
 }
 
-/// 外部リソースをパース
+/// Parse external resource
 fn parse_ext_resource(content: &str) -> Result<ExtResource, TscnError> {
     let resource_type = extract_attr(content, "type")
         .ok_or_else(|| TscnError::ParseError("Missing type in ext_resource".into()))?;
@@ -325,7 +325,7 @@ fn parse_ext_resource(content: &str) -> Result<ExtResource, TscnError> {
     })
 }
 
-/// ノードヘッダーをパース
+/// Parse node header
 fn parse_node_header(content: &str) -> Result<SceneNode, TscnError> {
     let name = extract_attr(content, "name")
         .ok_or_else(|| TscnError::ParseError("Missing name in node".into()))?;

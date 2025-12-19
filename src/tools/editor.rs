@@ -1,4 +1,4 @@
-//! エディター制御ツール - Godot実行・デバッグ
+//! Editor control tools - Godot execution and debugging
 
 use rmcp::{model::CallToolResult, model::Content, ErrorData as McpError};
 use std::fs;
@@ -11,22 +11,22 @@ use super::{
     LaunchEditorRequest, RunProjectRequest, StopProjectRequest,
 };
 
-/// PIDファイルパス取得
+/// Get the PID file path
 fn get_pid_file_path(project_root: &std::path::Path) -> PathBuf {
     project_root.join(".godot_mcp_pid")
 }
 
 impl GodotTools {
-    /// Godot実行ファイルのパスを解決
+    /// Resolve the path to the Godot executable
     fn resolve_godot_path(&self) -> Result<PathBuf, McpError> {
-        // 1. 明示的に設定されている場合
+        // 1. If explicitly set
         if let Some(ref path) = self.godot_path {
             if path.exists() {
                 return Ok(path.clone());
             }
         }
 
-        // 2. 環境変数 GODOT_PATH
+        // 2. Environment variable GODOT_PATH
         if let Ok(env_path) = std::env::var("GODOT_PATH") {
             let path = PathBuf::from(&env_path);
             if path.exists() {
@@ -34,7 +34,7 @@ impl GodotTools {
             }
         }
 
-        // 3. PATH から検索 (Windows)
+        // 3. Search in PATH (Windows)
         #[cfg(windows)]
         {
             if let Ok(output) = Command::new("where").arg("godot").output() {
@@ -49,7 +49,7 @@ impl GodotTools {
                     }
                 }
             }
-            // godot4 も試す
+            // Also try godot4
             if let Ok(output) = Command::new("where").arg("godot4").output() {
                 if output.status.success() {
                     if let Ok(path_str) = String::from_utf8(output.stdout) {
@@ -64,7 +64,7 @@ impl GodotTools {
             }
         }
 
-        // 4. デフォルトパス (Windows)
+        // 4. Default paths (Windows)
         #[cfg(windows)]
         {
             let default_paths = [
@@ -87,7 +87,7 @@ impl GodotTools {
         ))
     }
 
-    /// get_godot_version - Godotバージョン取得
+    /// get_godot_version - Get Godot version
     pub async fn handle_get_godot_version(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -113,7 +113,7 @@ impl GodotTools {
         )]))
     }
 
-    /// run_project - プロジェクト実行
+    /// run_project - Run project
     pub async fn handle_run_project(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -129,11 +129,11 @@ impl GodotTools {
         let project_root = self.get_base_path();
         let pid_file = get_pid_file_path(project_root);
 
-        // 既に実行中かチェック
+        // Check if already running
         if pid_file.exists() {
             if let Ok(pid_str) = fs::read_to_string(&pid_file) {
                 if let Ok(pid) = pid_str.trim().parse::<u32>() {
-                    // プロセスがまだ存在するか確認
+                    // Check if process still exists
                     #[cfg(windows)]
                     {
                         let check = Command::new("tasklist")
@@ -171,15 +171,15 @@ impl GodotTools {
 
         let pid = child.id();
 
-        // PIDをファイルに保存
+        // Save PID to file
         fs::write(&pid_file, pid.to_string())
             .map_err(|e| McpError::internal_error(format!("Failed to save PID: {}", e), None))?;
 
-        // 出力キャプチャ用ファイルも作成
+        // Create output capture file
         let output_file = project_root.join(".godot_mcp_output");
         fs::write(&output_file, "").ok();
 
-        // 非同期で出力をファイルに書き込むスレッドを起動
+        // Start thread to asynchronously write output to file
         let output_file_clone = output_file.clone();
         let stdout = child.stdout.take();
         let stderr = child.stderr.take();
@@ -217,7 +217,7 @@ impl GodotTools {
         )]))
     }
 
-    /// stop_project - プロジェクト停止
+    /// stop_project - Stop project
     pub async fn handle_stop_project(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -243,7 +243,7 @@ impl GodotTools {
             .parse()
             .map_err(|_| McpError::internal_error("Invalid PID in file".to_string(), None))?;
 
-        // プロセスを終了
+        // Terminate process
         #[cfg(windows)]
         {
             Command::new("taskkill")
@@ -254,7 +254,7 @@ impl GodotTools {
                 })?;
         }
 
-        // PIDファイルを削除
+        // Delete PID file
         fs::remove_file(&pid_file).ok();
 
         let result = serde_json::json!({
@@ -268,7 +268,7 @@ impl GodotTools {
         )]))
     }
 
-    /// get_debug_output - デバッグ出力取得
+    /// get_debug_output - Get debug output
     pub async fn handle_get_debug_output(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -318,7 +318,7 @@ impl GodotTools {
         )]))
     }
 
-    /// launch_editor - エディター起動
+    /// launch_editor - Launch editor
     pub async fn handle_launch_editor(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -357,7 +357,7 @@ impl GodotTools {
         )]))
     }
 
-    /// get_running_status - 実行状態確認
+    /// get_running_status - Get running status
     pub async fn handle_get_running_status(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -380,7 +380,7 @@ impl GodotTools {
         let pid_str = fs::read_to_string(&pid_file).unwrap_or_default();
         let pid: u32 = pid_str.trim().parse().unwrap_or(0);
 
-        // プロセスがまだ存在するか確認
+        // Check if process still exists
         let mut still_running = false;
         #[cfg(windows)]
         {

@@ -1,4 +1,4 @@
-//! Godotファイルパーサー
+//! Godot file parsers
 
 pub mod gdscript;
 pub mod tres;
