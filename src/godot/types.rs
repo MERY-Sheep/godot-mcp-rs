@@ -1,15 +1,15 @@
-//! Godot型定義
+//! Godot Type Definitions
 
 use serde::{Deserialize, Serialize};
 
-/// Vector2型
+/// Vector2 Type
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vector2 {
     pub x: f64,
     pub y: f64,
 }
 
-/// Vector3型
+/// Vector3 Type
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vector3 {
     pub x: f64,
@@ -39,7 +39,7 @@ impl std::fmt::Display for Vector3 {
     }
 }
 
-/// Transform3D型
+/// Transform3D Type
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transform3D {
     pub basis: [[f64; 3]; 3],

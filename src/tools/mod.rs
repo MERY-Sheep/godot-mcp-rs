@@ -1,4 +1,4 @@
-//! MCPツール定義 - Godot MCP Server
+//! MCP Tool Definitions - Godot MCP Server
 
 mod editor;
 mod project;
@@ -20,294 +20,294 @@ use std::path::{Path, PathBuf};
 // Request Types
 // ============================================================
 
-/// ファイル一覧リクエスト
+/// List Files Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ListFilesRequest {
-    /// サブディレクトリパス（オプション）
+    /// Subdirectory path (optional)
     pub path: Option<String>,
 }
 
-/// ファイル読み取りリクエスト
+/// Read File Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ReadFileRequest {
-    /// ファイルパス
+    /// File path
     pub path: String,
 }
 
-/// シーン作成リクエスト
+/// Create Scene Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CreateSceneRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub path: String,
-    /// ルートノードタイプ（例: Node3D, CharacterBody3D）
+    /// Root node type (e.g. Node3D, CharacterBody3D)
     pub root_type: String,
-    /// ルートノード名（省略時はファイル名から生成）
+    /// Root node name (generated from filename if omitted)
     pub root_name: Option<String>,
 }
 
-/// シーン読み取りリクエスト
+/// Read Scene Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ReadSceneRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub path: String,
 }
 
-/// ノード追加リクエスト
+/// Add Node Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AddNodeRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub scene_path: String,
-    /// 親ノードパス（"." でルート直下）
+    /// Parent node path ("." for root)
     pub parent: String,
-    /// ノード名
+    /// Node name
     pub name: String,
-    /// ノードタイプ（例: Node3D, MeshInstance3D）
+    /// Node type (e.g. Node3D, MeshInstance3D)
     pub node_type: String,
 }
 
-/// ノード削除リクエスト
+/// Remove Node Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct RemoveNodeRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub scene_path: String,
-    /// 削除するノードのパス
+    /// Path of the node to remove
     pub node_path: String,
 }
 
-/// プロパティ設定リクエスト
+/// Set Property Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct SetNodePropertyRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub scene_path: String,
-    /// ノードパス
+    /// Node path
     pub node_path: String,
-    /// プロパティ名
+    /// Property name
     pub property: String,
-    /// プロパティ値（GDScript形式の文字列）
+    /// Property value (GDScript format string)
     pub value: String,
 }
 
-/// ノードツリー取得リクエスト
+/// Get Node Tree Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct GetNodeTreeRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub path: String,
 }
 
-/// スクリプト作成リクエスト
+/// Create Script Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CreateScriptRequest {
-    /// スクリプトファイルパス
+    /// Script file path
     pub path: String,
-    /// 継承するクラス（CharacterBody3D, Node3D等）
+    /// Class to inherit (CharacterBody3D, Node3D, etc.)
     pub extends: String,
-    /// 初期コンテンツ（省略時はテンプレート使用）
+    /// Initial content (uses template if omitted)
     pub content: Option<String>,
 }
 
-/// スクリプトアタッチリクエスト
+/// Attach Script Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AttachScriptRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub scene_path: String,
-    /// ノードパス（"." でルート）
+    /// Node path ("." for root)
     pub node_path: String,
-    /// スクリプトファイルパス
+    /// Script file path
     pub script_path: String,
 }
 
-/// シーンバリデーションリクエスト
+/// Validate Scene Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ValidateTscnRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub path: String,
 }
 
-/// シーンコピーリクエスト
+/// Copy Scene Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CopySceneRequest {
-    /// コピー元シーンパス
+    /// Source scene path
     pub source: String,
-    /// コピー先シーンパス
+    /// Destination scene path
     pub destination: String,
 }
 
-/// シーンメタデータ取得リクエスト
+/// Get Scene Metadata Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct GetSceneMetadataRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub path: String,
 }
 
-/// 全シーン一覧リクエスト（パラメータなし）
+/// List All Scenes Request (no params)
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct ListAllScenesRequest {}
 
-/// シーン比較リクエスト
+/// Compare Scenes Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CompareScenesRequest {
-    /// 比較元シーンパス
+    /// Source scene path
     pub path_a: String,
-    /// 比較先シーンパス
+    /// Target scene path
     pub path_b: String,
 }
 
-/// シーンJSONエクスポートリクエスト
+/// Export Scene as JSON Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ExportSceneAsJsonRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub path: String,
 }
 
-/// バッチノード追加リクエスト
+/// Batch Add Nodes Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct BatchAddNodesRequest {
-    /// シーンファイルパス
+    /// Scene file path
     pub scene_path: String,
-    /// 追加するノードのリスト
+    /// List of nodes to add
     pub nodes: Vec<BatchNodeEntry>,
 }
 
-/// バッチノードエントリ
+/// Batch Node Entry
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct BatchNodeEntry {
-    /// 親ノードパス（"." でルート直下）
+    /// Parent node path ("." for root)
     pub parent: String,
-    /// ノード名
+    /// Node name
     pub name: String,
-    /// ノードタイプ
+    /// Node type
     #[serde(rename = "type")]
     pub node_type: String,
 }
 
-/// プロジェクト内検索リクエスト
+/// Search in Project Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct SearchInProjectRequest {
-    /// 検索タイプ: "node_type", "resource", "script"
+    /// Search type: "node_type", "resource", "script"
     pub search_type: String,
-    /// 検索クエリ
+    /// Search query
     pub query: String,
 }
 
-/// スクリプト読み取りリクエスト
+/// Read Script Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ReadScriptRequest {
-    /// スクリプトファイルパス
+    /// Script file path
     pub path: String,
 }
 
-/// 関数追加リクエスト
+/// Add Function Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AddFunctionRequest {
-    /// スクリプトファイルパス
+    /// Script file path
     pub path: String,
-    /// 関数名
+    /// Function name
     pub name: String,
-    /// パラメータ（オプション）
+    /// Parameters (optional)
     pub params: Option<Vec<FunctionParamInput>>,
-    /// 戻り値型（オプション）
+    /// Return type (optional)
     pub return_type: Option<String>,
-    /// 関数本体
+    /// Function body
     pub body: Option<String>,
 }
 
-/// 関数パラメータ入力
+/// Function Parameter Input
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct FunctionParamInput {
     pub name: String,
     pub param_type: Option<String>,
 }
 
-/// エクスポート変数追加リクエスト
+/// Add Export Variable Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AddExportVarRequest {
-    /// スクリプトファイルパス
+    /// Script file path
     pub path: String,
-    /// 変数名
+    /// Variable name
     pub name: String,
-    /// 型（オプション）
+    /// Type (optional)
     pub var_type: Option<String>,
-    /// デフォルト値（オプション）
+    /// Default value (optional)
     pub default_value: Option<String>,
 }
 
-/// スクリプト分析リクエスト
+/// Analyze Script Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AnalyzeScriptRequest {
-    /// スクリプトファイルパス
+    /// Script file path
     pub path: String,
 }
 
-/// リソース一覧リクエスト
+/// List Resources Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct ListResourcesRequest {
-    /// フィルタするリソースタイプ（オプション）
+    /// Resource type to filter (optional)
     pub filter_type: Option<String>,
 }
 
-/// リソース読み取りリクエスト
+/// Read Resource Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ReadResourceRequest {
-    /// リソースファイルパス
+    /// Resource file path
     pub path: String,
 }
 
-/// ノード型情報リクエスト
+/// Get Node Type Info Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct GetNodeTypeInfoRequest {
-    /// ノード型名（例: "CharacterBody3D", "Camera3D"）
+    /// Node type name (e.g. "CharacterBody3D", "Camera3D")
     pub node_type: String,
 }
 
-/// テンプレートからシーン作成リクエスト
+/// Create Scene from Template Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CreateSceneFromTemplateRequest {
-    /// 作成するシーンのパス
+    /// Path of the scene to create
     pub path: String,
-    /// テンプレート名: "player_3d", "player_2d", "enemy_3d", "level_3d", "ui_menu"
+    /// Template name: "player_3d", "player_2d", "enemy_3d", "level_3d", "ui_menu"
     pub template: String,
-    /// ルートノード名（オプション、デフォルトはファイル名）
+    /// Root node name (optional, defaults to filename)
     pub root_name: Option<String>,
 }
 
-/// プロジェクト統計リクエスト
+/// Get Project Stats Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct GetProjectStatsRequest {}
 
-/// プロジェクト検証リクエスト
+/// Validate Project Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct ValidateProjectRequest {}
 
-/// Godotバージョン取得リクエスト
+/// Get Godot Version Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct GetGodotVersionRequest {}
 
-/// プロジェクト実行リクエスト
+/// Run Project Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct RunProjectRequest {
-    /// 実行するシーン（オプション、デフォルトはメインシーン）
+    /// Scene to run (optional, defaults to main scene)
     pub scene: Option<String>,
 }
 
-/// プロジェクト停止リクエスト
+/// Stop Project Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct StopProjectRequest {}
 
-/// デバッグ出力取得リクエスト
+/// Get Debug Output Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct GetDebugOutputRequest {
-    /// 取得する最大行数（オプション、デフォルト100行）
+    /// Maximum number of lines to retrieve (optional, default 100)
     pub lines: Option<u32>,
 }
 
-/// エディター起動リクエスト
+/// Launch Editor Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct LaunchEditorRequest {
-    /// 開くシーン（オプション）
+    /// Scene to open (optional)
     pub scene: Option<String>,
 }
 
-/// 実行状態確認リクエスト
+/// Get Running Status Request
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct GetRunningStatusRequest {}
 
@@ -315,7 +315,7 @@ pub struct GetRunningStatusRequest {}
 // GodotTools
 // ============================================================
 
-/// Godot MCPサーバー
+/// Godot MCP Server
 #[derive(Clone, Default)]
 pub struct GodotTools {
     pub project_root: Option<PathBuf>,

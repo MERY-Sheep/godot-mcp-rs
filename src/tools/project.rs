@@ -1,4 +1,4 @@
-//! プロジェクト関連ツール - ファイル操作・検索
+//! Project Related Tools - File Operation & Search
 
 use rmcp::{model::CallToolResult, model::Content, ErrorData as McpError};
 use std::path::{Path, PathBuf};
@@ -10,7 +10,7 @@ use super::{
 use crate::godot::tscn::GodotScene;
 
 impl GodotTools {
-    /// list_project_files - プロジェクトファイル一覧
+    /// list_project_files - List project files
     pub(super) async fn handle_list_project_files(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -50,7 +50,7 @@ impl GodotTools {
         )]))
     }
 
-    /// read_file - ファイル読み取り
+    /// read_file - Read file
     pub(super) async fn handle_read_file(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -66,7 +66,7 @@ impl GodotTools {
         Ok(CallToolResult::success(vec![Content::text(content)]))
     }
 
-    /// list_all_scenes - 全シーン一覧
+    /// list_all_scenes - List all scenes
     pub(super) async fn handle_list_all_scenes(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -115,7 +115,7 @@ impl GodotTools {
         )]))
     }
 
-    /// search_in_project - プロジェクト内検索
+    /// search_in_project - Search in project
     pub(super) async fn handle_search_in_project(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -210,7 +210,7 @@ impl GodotTools {
         )]))
     }
 
-    /// get_node_type_info - ノード型の詳細情報を取得
+    /// get_node_type_info - Get node type details
     pub(super) async fn handle_get_node_type_info(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -226,7 +226,7 @@ impl GodotTools {
         )]))
     }
 
-    /// get_project_stats - プロジェクト統計
+    /// get_project_stats - Get project statistics
     pub(super) async fn handle_get_project_stats(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -259,7 +259,7 @@ impl GodotTools {
         let (script_count, script_bytes) = count_files(base, "gd");
         let (resource_count, resource_bytes) = count_files(base, "tres");
 
-        // ノード数を計算
+        // Calculate node counts
         let mut total_nodes = 0;
         let mut node_type_counts: std::collections::HashMap<String, usize> =
             std::collections::HashMap::new();
@@ -307,7 +307,7 @@ impl GodotTools {
         )]))
     }
 
-    /// validate_project - プロジェクト検証
+    /// validate_project - Validate project
     pub(super) async fn handle_validate_project(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -317,7 +317,7 @@ impl GodotTools {
 
         let mut issues: Vec<serde_json::Value> = Vec::new();
 
-        // 全tscnファイル収集
+        // Collect all tscn files
         fn find_tscn_files_val(dir: &Path) -> Vec<PathBuf> {
             let mut files = Vec::new();
             if let Ok(entries) = std::fs::read_dir(dir) {
@@ -348,7 +348,7 @@ impl GodotTools {
             files
         }
 
-        // 使用中のスクリプトパスを収集
+        // Collect used script paths
         let mut used_scripts: std::collections::HashSet<String> = std::collections::HashSet::new();
 
         for file_path in find_tscn_files_val(base) {
@@ -358,7 +358,7 @@ impl GodotTools {
             if let Ok(content) = std::fs::read_to_string(&file_path) {
                 match GodotScene::parse(&content) {
                     Ok(scene) => {
-                        // 空シーン
+                        // Empty scene
                         if scene.nodes.is_empty() {
                             issues.push(serde_json::json!({
                                 "type": "empty_scene",
@@ -367,7 +367,7 @@ impl GodotTools {
                             }));
                         }
 
-                        // スクリプト参照を収集
+                        // Collect script references
                         for res in &scene.ext_resources {
                             if res.resource_type == "Script" {
                                 used_scripts.insert(res.path.clone());
@@ -386,7 +386,7 @@ impl GodotTools {
             }
         }
 
-        // 未使用スクリプト検出
+        // Detect unused scripts
         for file_path in find_gd_files(base) {
             let rel_path = file_path.strip_prefix(base).unwrap_or(&file_path);
             let res_path = format!("res://{}", rel_path.to_string_lossy().replace('\\', "/"));
@@ -420,130 +420,130 @@ impl GodotTools {
     }
 }
 
-/// Godot ノード型の静的データベース
+/// Godot Node Type Static Database
 fn get_node_type_database(node_type: &str) -> serde_json::Value {
     match node_type {
         // 3D Physics Bodies
         "CharacterBody3D" => serde_json::json!({
             "name": "CharacterBody3D",
             "category": "3D Physics",
-            "description": "3Dキャラクター移動用の物理ボディ。move_and_slide()で衝突を処理しながら移動可能。",
+            "description": "Physics body for 3D character movement. Can move while handling collisions using move_and_slide().",
             "inherits": ["PhysicsBody3D", "CollisionObject3D", "Node3D", "Node"],
             "key_properties": {
-                "velocity": "Vector3 - 現在の速度ベクトル",
-                "floor_max_angle": "float - 床として判定される最大角度(rad)",
+                "velocity": "Vector3 - Current velocity vector",
+                "floor_max_angle": "float - Maximum angle considered as floor (rad)",
                 "motion_mode": "MotionMode - GROUNDED or FLOATING"
             },
             "key_methods": ["move_and_slide()", "is_on_floor()", "is_on_wall()", "get_floor_normal()"],
             "common_children": ["CollisionShape3D", "MeshInstance3D", "Camera3D", "AnimationPlayer"],
             "script_template": "CharacterBody3D",
-            "tips": "CollisionShape3Dを子として必ず追加。velocityを設定してmove_and_slide()を呼ぶ。"
+            "tips": "Always add CollisionShape3D as a child. Set velocity and call move_and_slide()."
         }),
         "RigidBody3D" => serde_json::json!({
             "name": "RigidBody3D",
             "category": "3D Physics",
-            "description": "物理シミュレーションで動くオブジェクト。重力や衝突が自動処理される。",
+            "description": "Object controlled by physics simulation. Gravity and collisions are handled automatically.",
             "inherits": ["PhysicsBody3D", "CollisionObject3D", "Node3D", "Node"],
             "key_properties": {
-                "mass": "float - 質量(kg)",
-                "gravity_scale": "float - 重力の影響係数",
-                "linear_velocity": "Vector3 - 線形速度",
-                "angular_velocity": "Vector3 - 角速度"
+                "mass": "float - Mass (kg)",
+                "gravity_scale": "float - Gravity influence scale",
+                "linear_velocity": "Vector3 - Linear velocity",
+                "angular_velocity": "Vector3 - Angular velocity"
             },
             "key_methods": ["apply_force()", "apply_impulse()", "apply_torque()"],
             "common_children": ["CollisionShape3D", "MeshInstance3D"],
-            "tips": "プレイヤー操作には不向き。投擲物やオブジェクト用。"
+            "tips": "Not suitable for player control. For thrown objects or debris."
         }),
         "StaticBody3D" => serde_json::json!({
             "name": "StaticBody3D",
             "category": "3D Physics",
-            "description": "動かない静的なコリジョンオブジェクト。地形や壁に最適。",
+            "description": "Static collision object that does not move. Ideal for terrain and walls.",
             "inherits": ["PhysicsBody3D", "CollisionObject3D", "Node3D", "Node"],
             "key_properties": {
-                "physics_material_override": "PhysicsMaterial - 摩擦・弾性"
+                "physics_material_override": "PhysicsMaterial - Friction and elasticity"
             },
             "common_children": ["CollisionShape3D", "MeshInstance3D"],
-            "tips": "大量配置してもパフォーマンス良好。レベルジオメトリに使用。"
+            "tips": "Performance is good even with many instances. Use for level geometry."
         }),
         "Area3D" => serde_json::json!({
             "name": "Area3D",
             "category": "3D Physics",
-            "description": "衝突検出用の領域。シグナルで入退出を検知。ダメージゾーンやトリガーに最適。",
+            "description": "Region for collision detection. Detects entry/exit via signals. Ideal for damage zones or triggers.",
             "inherits": ["CollisionObject3D", "Node3D", "Node"],
             "key_signals": ["body_entered(body)", "body_exited(body)", "area_entered(area)"],
             "common_children": ["CollisionShape3D"],
-            "tips": "monitoring=trueで検出有効。monitorable=trueで他Areaから検出される。"
+            "tips": "Enable detection with monitoring=true. Detectable by other Areas with monitorable=true."
         }),
 
         // 3D Visual
         "MeshInstance3D" => serde_json::json!({
             "name": "MeshInstance3D",
             "category": "3D Visual",
-            "description": "3Dメッシュを表示するノード。",
+            "description": "Node that displays a 3D mesh.",
             "inherits": ["GeometryInstance3D", "VisualInstance3D", "Node3D", "Node"],
             "key_properties": {
-                "mesh": "Mesh - 表示するメッシュリソース",
-                "surface_material_override": "Material - マテリアル上書き"
+                "mesh": "Mesh - Mesh resource to display",
+                "surface_material_override": "Material - Material override"
             },
             "common_meshes": ["BoxMesh", "SphereMesh", "CapsuleMesh", "CylinderMesh", "PlaneMesh"],
-            "tips": "PrimitiveMeshを使うと形状を簡単に作成可能。"
+            "tips": "Use PrimitiveMesh for simple shapes."
         }),
         "Camera3D" => serde_json::json!({
             "name": "Camera3D",
             "category": "3D Visual",
-            "description": "3Dシーンを描画するカメラ。current=trueでアクティブ化。",
+            "description": "Camera that renders the 3D scene. Activate with current=true.",
             "inherits": ["Node3D", "Node"],
             "key_properties": {
-                "current": "bool - このカメラをアクティブにする",
-                "fov": "float - 視野角(度)",
-                "near": "float - ニアクリップ距離",
-                "far": "float - ファークリップ距離"
+                "current": "bool - Activate this camera",
+                "fov": "float - Field of View (degrees)",
+                "near": "float - Near clip distance",
+                "far": "float - Far clip distance"
             },
             "key_methods": ["make_current()", "project_ray_origin()", "unproject_position()"],
-            "tips": "TPS: プレイヤーの子として配置。FPS: Head子ノードの子として配置。"
+            "tips": "TPS: Place as child of player. FPS: Place as child of Head node."
         }),
         "DirectionalLight3D" => serde_json::json!({
             "name": "DirectionalLight3D",
             "category": "3D Visual",
-            "description": "太陽光のような無限遠からの平行光源。",
+            "description": "Parallel light source from infinite distance, like sunlight.",
             "inherits": ["Light3D", "VisualInstance3D", "Node3D", "Node"],
             "key_properties": {
-                "light_energy": "float - 光の強さ",
-                "shadow_enabled": "bool - 影を生成"
+                "light_energy": "float - Light intensity",
+                "shadow_enabled": "bool - Enable shadows"
             },
-            "tips": "シーンに1つ配置。回転でsun方向を制御。"
+            "tips": "Place one in the scene. Control sun direction by rotation."
         }),
 
         // 2D Physics Bodies
         "CharacterBody2D" => serde_json::json!({
             "name": "CharacterBody2D",
             "category": "2D Physics",
-            "description": "2Dキャラクター移動用の物理ボディ。",
+            "description": "Physics body for 2D character movement.",
             "inherits": ["PhysicsBody2D", "CollisionObject2D", "Node2D", "CanvasItem", "Node"],
             "key_properties": {
-                "velocity": "Vector2 - 現在の速度ベクトル",
-                "floor_max_angle": "float - 床として判定される最大角度"
+                "velocity": "Vector2 - Current velocity vector",
+                "floor_max_angle": "float - Maximum angle considered as floor"
             },
             "key_methods": ["move_and_slide()", "is_on_floor()", "is_on_wall()"],
             "common_children": ["CollisionShape2D", "Sprite2D", "AnimatedSprite2D"],
             "script_template": "CharacterBody2D",
-            "tips": "2Dプラットフォーマーやトップダウンゲームのプレイヤーに最適。"
+            "tips": "Ideal for 2D platformers or top-down game players."
         }),
         "RigidBody2D" => serde_json::json!({
             "name": "RigidBody2D",
             "category": "2D Physics",
-            "description": "2D物理シミュレーションオブジェクト。",
+            "description": "2D physics simulation object.",
             "inherits": ["PhysicsBody2D", "CollisionObject2D", "Node2D", "CanvasItem", "Node"],
             "key_properties": {
-                "mass": "float - 質量",
-                "gravity_scale": "float - 重力係数"
+                "mass": "float - Mass",
+                "gravity_scale": "float - Gravity scale"
             },
             "common_children": ["CollisionShape2D", "Sprite2D"]
         }),
         "Area2D" => serde_json::json!({
             "name": "Area2D",
             "category": "2D Physics",
-            "description": "2D衝突検出領域。",
+            "description": "2D collision detection region.",
             "inherits": ["CollisionObject2D", "Node2D", "CanvasItem", "Node"],
             "key_signals": ["body_entered(body)", "body_exited(body)"],
             "common_children": ["CollisionShape2D"]
@@ -553,65 +553,65 @@ fn get_node_type_database(node_type: &str) -> serde_json::Value {
         "Sprite2D" => serde_json::json!({
             "name": "Sprite2D",
             "category": "2D Visual",
-            "description": "2Dテクスチャを表示するノード。",
+            "description": "Node that displays a 2D texture.",
             "inherits": ["Node2D", "CanvasItem", "Node"],
             "key_properties": {
-                "texture": "Texture2D - 表示するテクスチャ",
-                "flip_h": "bool - 水平反転",
-                "flip_v": "bool - 垂直反転"
+                "texture": "Texture2D - Texture to display",
+                "flip_h": "bool - Horizontal flip",
+                "flip_v": "bool - Vertical flip"
             }
         }),
         "AnimatedSprite2D" => serde_json::json!({
             "name": "AnimatedSprite2D",
             "category": "2D Visual",
-            "description": "スプライトシートアニメーション用ノード。",
+            "description": "Node for sprite sheet animation.",
             "inherits": ["Node2D", "CanvasItem", "Node"],
             "key_properties": {
-                "sprite_frames": "SpriteFrames - アニメーションフレーム集",
-                "animation": "StringName - 再生中のアニメーション名"
+                "sprite_frames": "SpriteFrames - Animation frames",
+                "animation": "StringName - Name of playing animation"
             },
             "key_methods": ["play()", "stop()"]
         }),
         "Camera2D" => serde_json::json!({
             "name": "Camera2D",
             "category": "2D Visual",
-            "description": "2Dシーン用カメラ。スムージングやリミット機能付き。",
+            "description": "Camera for 2D scenes. Includes smoothing and limit functions.",
             "inherits": ["Node2D", "CanvasItem", "Node"],
             "key_properties": {
-                "zoom": "Vector2 - ズームレベル",
-                "position_smoothing_enabled": "bool - スムーズ追従",
-                "limit_left/right/top/bottom": "int - カメラ移動制限"
+                "zoom": "Vector2 - Zoom level",
+                "position_smoothing_enabled": "bool - Smooth following",
+                "limit_left/right/top/bottom": "int - Camera movement limits"
             },
-            "tips": "プレイヤーの子にして追従させる。"
+            "tips": "Place as child of player to follow."
         }),
 
         // UI
         "Control" => serde_json::json!({
             "name": "Control",
             "category": "UI",
-            "description": "UI要素の基底クラス。アンカーとマージンでレイアウト。",
+            "description": "Base class for UI elements. Layout with anchors and margins.",
             "inherits": ["CanvasItem", "Node"],
             "key_properties": {
-                "anchor_*": "float - 0.0~1.0で親に対する位置",
-                "offset_*": "float - アンカーからのピクセルオフセット"
+                "anchor_*": "float - Position relative to parent (0.0~1.0)",
+                "offset_*": "float - Pixel offset from anchor"
             },
-            "tips": "Layout > Anchors Presetで簡単配置。"
+            "tips": "Use Layout > Anchors Preset for easy positioning."
         }),
         "Button" => serde_json::json!({
             "name": "Button",
             "category": "UI",
-            "description": "クリック可能なボタン。",
+            "description": "Clickable button.",
             "inherits": ["BaseButton", "Control", "CanvasItem", "Node"],
-            "key_properties": {"text": "String - ボタンテキスト"},
+            "key_properties": {"text": "String - Button text"},
             "key_signals": ["pressed()"]
         }),
         "Label" => serde_json::json!({
             "name": "Label",
             "category": "UI",
-            "description": "テキスト表示用ノード。",
+            "description": "Node for displaying text.",
             "inherits": ["Control", "CanvasItem", "Node"],
             "key_properties": {
-                "text": "String - 表示テキスト",
+                "text": "String - Display text",
                 "horizontal_alignment": "HorizontalAlignment"
             }
         }),
@@ -620,41 +620,41 @@ fn get_node_type_database(node_type: &str) -> serde_json::Value {
         "AnimationPlayer" => serde_json::json!({
             "name": "AnimationPlayer",
             "category": "Animation",
-            "description": "アニメーション再生を管理。プロパティ、メソッド呼び出し、シグナルをアニメーション可能。",
+            "description": "Manages animation playback. Can animate properties, method calls, and signals.",
             "inherits": ["AnimationMixer", "Node"],
             "key_methods": ["play(name)", "stop()", "queue(name)"],
             "key_signals": ["animation_finished(name)"],
-            "tips": "Animationエディタでキーフレームを設定。"
+            "tips": "Set keyframes in the Animation editor."
         }),
         "AnimationTree" => serde_json::json!({
             "name": "AnimationTree",
             "category": "Animation",
-            "description": "ステートマシンやブレンドツリーで複雑なアニメーション制御。",
+            "description": "Complex animation control with state machines and blend trees.",
             "inherits": ["AnimationMixer", "Node"],
             "key_properties": {
-                "anim_player": "NodePath - 使用するAnimationPlayer",
-                "active": "bool - 有効化"
+                "anim_player": "NodePath - AnimationPlayer to use",
+                "active": "bool - Activate"
             },
-            "tips": "3Dキャラクターの移動・攻撃アニメブレンドに最適。"
+            "tips": "Ideal for blending movement and attack animations of 3D characters."
         }),
 
-        // その他
+        // Others
         "Node3D" => serde_json::json!({
             "name": "Node3D",
             "category": "3D Base",
-            "description": "3D空間の基底ノード。位置・回転・スケールを持つ。",
+            "description": "Base node for 3D space. Has position, rotation, and scale.",
             "inherits": ["Node"],
             "key_properties": {
                 "position": "Vector3",
                 "rotation": "Vector3 (radians)",
                 "scale": "Vector3"
             },
-            "tips": "空のNode3Dはグループ化やマーカーに便利。"
+            "tips": "Empty Node3D is useful for grouping or markers."
         }),
         "Node2D" => serde_json::json!({
             "name": "Node2D",
             "category": "2D Base",
-            "description": "2D空間の基底ノード。",
+            "description": "Base node for 2D space.",
             "inherits": ["CanvasItem", "Node"],
             "key_properties": {
                 "position": "Vector2",
@@ -665,19 +665,19 @@ fn get_node_type_database(node_type: &str) -> serde_json::Value {
         "Node" => serde_json::json!({
             "name": "Node",
             "category": "Core",
-            "description": "すべてのノードの基底クラス。",
+            "description": "Base class for all nodes.",
             "key_methods": ["_ready()", "_process(delta)", "_physics_process(delta)", "_input(event)"],
-            "tips": "スクリプトのみのロジックノードとして使用可能。"
+            "tips": "Can be used as a logic-only node with just a script."
         }),
         "Timer" => serde_json::json!({
             "name": "Timer",
             "category": "Utility",
-            "description": "一定時間後にシグナルを発火するタイマー。",
+            "description": "Timer that fires a signal after a certain time.",
             "inherits": ["Node"],
             "key_properties": {
-                "wait_time": "float - 待機時間(秒)",
-                "one_shot": "bool - 一回だけ発火",
-                "autostart": "bool - 自動開始"
+                "wait_time": "float - Wait time (seconds)",
+                "one_shot": "bool - Fire only once",
+                "autostart": "bool - Auto start"
             },
             "key_signals": ["timeout()"],
             "key_methods": ["start()", "stop()"]
@@ -685,20 +685,20 @@ fn get_node_type_database(node_type: &str) -> serde_json::Value {
         "AudioStreamPlayer" | "AudioStreamPlayer2D" | "AudioStreamPlayer3D" => serde_json::json!({
             "name": node_type,
             "category": "Audio",
-            "description": "オーディオ再生ノード。2D/3Dは位置に応じた空間オーディオ。",
+            "description": "Audio playback node. 2D/3D provides spatial audio based on position.",
             "key_properties": {
-                "stream": "AudioStream - 再生するオーディオ",
-                "volume_db": "float - 音量(dB)"
+                "stream": "AudioStream - Audio to play",
+                "volume_db": "float - Volume (dB)"
             },
             "key_methods": ["play()", "stop()"],
             "key_signals": ["finished()"]
         }),
 
-        // 不明なノード型
+        // Unknown node type
         _ => serde_json::json!({
             "name": node_type,
             "found": false,
-            "message": format!("ノード型 '{}' の情報がデータベースにありません。Godotドキュメントを参照してください。", node_type),
+            "message": format!("Info for node type '{}' not found in database. Please refer to Godot documentation.", node_type),
             "doc_url": format!("https://docs.godotengine.org/en/stable/classes/class_{}.html", node_type.to_lowercase())
         }),
     }

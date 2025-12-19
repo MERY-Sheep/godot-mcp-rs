@@ -1,4 +1,4 @@
-//! リソース操作ツール - .tres読み取り
+//! Resource Related Tools - .tres Reading
 
 use rmcp::{model::CallToolResult, model::Content, ErrorData as McpError};
 use std::path::{Path, PathBuf};
@@ -7,7 +7,7 @@ use super::{GodotTools, ListResourcesRequest, ReadResourceRequest};
 use crate::godot::tres::GodotResource;
 
 impl GodotTools {
-    /// list_resources - プロジェクト内のリソース一覧
+    /// list_resources - List resources in project
     pub(super) async fn handle_list_resources(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
@@ -19,7 +19,7 @@ impl GodotTools {
         let base = self.get_base_path();
         let mut resources = Vec::new();
 
-        // 再帰的にtresファイルを探索
+        // Recursively search for tres files
         fn find_tres_files(dir: &Path) -> Vec<PathBuf> {
             let mut files = Vec::new();
             if let Ok(entries) = std::fs::read_dir(dir) {
@@ -40,7 +40,7 @@ impl GodotTools {
         for file_path in tres_files {
             if let Ok(content) = std::fs::read_to_string(&file_path) {
                 if let Ok(resource) = GodotResource::parse(&content) {
-                    // フィルタチェック
+                    // Check filter
                     if let Some(ref filter) = req.filter_type {
                         if !resource.resource_type.contains(filter) {
                             continue;
@@ -67,7 +67,7 @@ impl GodotTools {
         )]))
     }
 
-    /// read_resource - リソースファイルを読み取り
+    /// read_resource - Read resource file
     pub(super) async fn handle_read_resource(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
