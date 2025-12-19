@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "godot-master",
+			"path": "../godot-master"
+		},
+		{
+			"name": "godot-mcp-rs",
+			"path": "."
+		},
+		{
+			"name": "index-chan",
+			"path": "../index-chan"
+		}
+	],
+	"settings": {}
+}

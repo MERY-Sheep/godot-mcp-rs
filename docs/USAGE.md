@@ -1,8 +1,41 @@
 # Godot MCP Server - 使い方
 
-## ツール一覧（34 個）
+# Godot MCP Server - 使い方
 
-### エディター・実行制御 (New! 🚀)
+## ツール一覧 (全 56 個)
+
+### ✨ リアルタイム操作 (live-\*)
+
+Godot エディター内で動作するプラグインと連携し、実行中のエディターに対して直接操作を行います。
+
+| カテゴリ           | ツール                     | 説明                                   |
+| :----------------- | :------------------------- | :------------------------------------- |
+| **基本**           | `live-ping`                | プラグインとの接続確認                 |
+| **ノード**         | `live-add-node`            | ノードをエディターに追加               |
+|                    | `live-remove-node`         | ノードをエディターから削除             |
+|                    | `live-rename-node`         | ノード名を変更                         |
+|                    | `live-duplicate-node`      | ノードを複製                           |
+|                    | `live-reparent-node`       | ノードの親を変更                       |
+|                    | `live-instantiate-scene`   | シーンをインスタンスとして追加         |
+| **プロパティ**     | `live-get-properties`      | ノードの全プロパティを取得             |
+|                    | `live-set-property`        | ノードのプロパティをリアルタイム変更   |
+| **シーン**         | `live-get-tree`            | 現在のエディター上のノードツリーを取得 |
+|                    | `live-save-scene`          | 編集中のシーンを保存                   |
+| **シグナル**       | `live-connect-signal`      | シグナルを接続                         |
+|                    | `live-disconnect-signal`   | シグナルを切断                         |
+|                    | `live-list-signals`        | ノードのシグナルと接続一覧を取得       |
+| **アニメーション** | `live-create-animation`    | 新規アニメーションの作成               |
+|                    | `live-add-animation-track` | アニメーションにトラックを追加         |
+|                    | `live-add-animation-key`   | トラックにキーフレームを追加           |
+|                    | `live-play-animation`      | アニメーションを再生                   |
+|                    | `live-stop-animation`      | アニメーションを停止                   |
+|                    | `live-list-animations`     | アニメーションリストの取得             |
+| **デバッグ**       | `live-get-editor-log`      | エディターのログを取得                 |
+|                    | `live-clear-editor-log`    | エディターのログをクリア               |
+
+---
+
+### 🎮 エディター・実行制御 (ファイルベース/プロセス制御)
 
 | ツール               | 説明                                                     |
 | :------------------- | :------------------------------------------------------- |
@@ -15,59 +48,34 @@
 
 ---
 
-### プロジェクト探索・分析
+### 🏗️ シーン操作 (.tscn)
 
-| ツール               | 説明                                                                   |
-| :------------------- | :--------------------------------------------------------------------- |
-| `list_project_files` | プロジェクト内のファイル一覧を取得                                     |
-| `read_file`          | ファイル内容をテキストとして読み取り                                   |
-| `list_all_scenes`    | 全シーン(.tscn)一覧を root_type 付きで取得                             |
-| `search_in_project`  | プロジェクト全体を node_type, resource, script で検索                  |
-| `get_node_type_info` | Godot ノード型の詳細情報（プロパティ、メソッド、推奨子）を取得         |
-| `get_project_stats`  | プロジェクト統計（ファイル数、ノード数、型別集計）を取得               |
-| `validate_project`   | プロジェクト全体を検証（パースエラー、空シーン、未使用スクリプト検出） |
-
----
-
-### シーン操作 (.tscn)
-
-| ツール                       | 説明                                                                            |
-| :--------------------------- | :------------------------------------------------------------------------------ |
-| `create_scene`               | 新規シーン作成                                                                  |
-| `create_scene_from_template` | テンプレートからシーン生成（player_3d, player_2d, enemy_3d, level_3d, ui_menu） |
-| `read_scene`                 | シーン内容を構造化 JSON として取得                                              |
-| `copy_scene`                 | シーンファイルをコピー                                                          |
-| `add_node`                   | 単一ノードを追加                                                                |
-| `batch_add_nodes`            | 複数のノードを一度に追加                                                        |
-| `remove_node`                | 指定パスのノードを削除                                                          |
-| `set_node_property`          | ノードのプロパティ（position, scale 等）を設定                                  |
-| `get_node_tree`              | ノードの親子構造をツリー形式で表示                                              |
-| `get_scene_metadata`         | シーンの統計情報や依存関係を取得                                                |
-| `validate_tscn`              | ファイルの構文チェック                                                          |
-| `compare_scenes`             | 2 つのシーンの差分（ノード増減、プロパティ変更）を表示                          |
-| `export_scene_as_json`       | 平坦な Godot シーンを階層構造 JSON に変換して取得                               |
+| ツール                       | 説明                                                    |
+| :--------------------------- | :------------------------------------------------------ |
+| `create_scene`               | 新規シーン作成                                          |
+| `create_scene_from_template` | テンプレートからシーン生成（player_3d, enemy_3d, etc.） |
+| `read_scene`                 | シーン内容を構造化 JSON として取得                      |
+| `add_node`                   | 単一ノード（ファイル内）を追加                          |
+| `remove_node`                | 指定パスのノードを削除                                  |
+| `set_node_property`          | ノードのプロパティ（position, scale 等）を設定          |
+| `get_node_tree`              | ノードの親子構造をツリー形式で表示                      |
+| `export_scene_as_json`       | 平坦な Godot シーンを階層構造 JSON に変換               |
+| `compare_scenes`             | 2 つのシーンの差分を表示                                |
 
 ---
 
-### スクリプト操作 (.gd)
+### 📜 スクリプト・プロジェクト分析
 
-| ツール           | 説明                                                   |
-| :--------------- | :----------------------------------------------------- |
-| `create_script`  | スクリプト作成（テンプレート対応）                     |
-| `attach_script`  | シーン内のノードにスクリプトを接続                     |
-| `read_script`    | スクリプトをパースして関数・変数・シグナルを JSON 取得 |
-| `add_function`   | 既存スクリプトに新しい関数を追加                       |
-| `add_export_var` | 既存スクリプトに `@export` 変数を追加                  |
-| `analyze_script` | スクリプトのサマリー情報（関数数など）を取得           |
-
----
-
-### リソース操作 (.tres)
-
-| ツール           | 説明                                                                 |
-| :--------------- | :------------------------------------------------------------------- |
-| `list_resources` | プロジェクト内の .tres ファイル一覧を取得                            |
-| `read_resource`  | .tres をパースして内容（外部リソース、サブ、プロパティ）を JSON 取得 |
+| ツール               | 説明                               |
+| :------------------- | :--------------------------------- |
+| `create_script`      | スクリプト作成（テンプレート対応） |
+| `attach_script`      | シーン内のノードにスクリプトを接続 |
+| `read_script`        | 関数・変数・シグナルを JSON 取得   |
+| `add_function`       | 既存スクリプトに新しい関数を追加   |
+| `analyze_script`     | スクリプトのサマリー情報を取得     |
+| `get_project_stats`  | プロジェクト統計を取得             |
+| `validate_project`   | プロジェクト全体を検証             |
+| `get_node_type_info` | Godot ノード型の詳細情報を取得     |
 
 ---
 

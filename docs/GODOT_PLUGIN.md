@@ -1,135 +1,48 @@
-# Godot エディタープラグイン設計
+# Godot エディタープラグイン (Godot MCP)
 
 ## 概要
 
-Godot エディター内で動作するプラグインを作成し、MCP サーバーからのコマンドをリアルタイムで実行する。
-ファイル直接編集ではなく、`EditorInterface` API を使用することで、エディターを閉じずにノード追加などが可能になる。
+Godot エディター内で動作するプラグインを介して、MCP サーバーからのコマンドをリアルタイムで実行します。
+Undo/Redo に完全対応しており、AI による変更をエディターの履歴から元に戻すことができます。
 
-## アーキテクチャ
+## インストール方法
 
-```
-┌─────────────────┐     HTTP/WS      ┌──────────────────────┐
-│  MCP Server     │ ────────────────>│  Godot Editor Plugin │
-│  (Rust CLI)     │                  │  (GDScript)          │
-│                 │ <────────────────│                      │
-│                 │     JSON Response│  EditorInterface API │
-└─────────────────┘                  └──────────────────────┘
-                                              ↓
-                                     ノード追加・削除
-                                     プロパティ変更
-                                     シーン保存
-                                     リアルタイム反映 ✨
-```
+1. このリポジトリの `addons/godot_mcp` ディレクトリを、ターゲットプロジェクトの `addons/` ディレクトリにコピー（またはシンボリックリンクを作成）します。
+2. Godot エディターを開き、**Project -> Project Settings -> Plugins** タブを選択します。
+3. **Godot MCP** プラグインの **Enable** チェックボックスをオンにします。
+4. 出力パネルに `Godot MCP Plugin started on port 6060` と表示されれば成功です。
 
-## 通信プロトコル
+## 技術仕様
 
-### オプション A: HTTP Server (推奨・シンプル)
+### サーバー構成
 
-- プラグインが HTTP サーバー（ポート 6060）を起動
-- Rust CLI が HTTP POST でコマンドを送信
-- レスポンスを JSON で返却
+- **プロトコル**: シンプルな TCP サーバー (HTTP-like JSON POST)
+- **ポート**: デフォルト `6060` (切替可能)
+- **スクリプト**: `plugin.gd` がサーバーを管理し、`command_handler.gd` がコマンドを処理します。
 
-### オプション B: WebSocket (双方向通信)
+### 対応コマンド (Live Commands)
 
-- より複雑だが、サーバーからプッシュ通知が可能
-- 将来的な拡張に有利
+現在、以下のコマンドがリアルタイム操作に対応しています：
 
----
+| カテゴリ           | コマンド                                                                                          | Undo/Redo |
+| :----------------- | :------------------------------------------------------------------------------------------------ | :-------: |
+| **ノード**         | `add_node`, `remove_node`, `rename_node`, `duplicate_node`, `reparent_node`, `instantiate_scene`  |    ✅     |
+| **プロパティ**     | `set_property`                                                                                    |    ✅     |
+|                    | `get_properties`                                                                                  |     -     |
+| **シーン**         | `get_tree`, `save_scene`                                                                          |     -     |
+| **シグナル**       | `connect_signal`, `disconnect_signal`                                                             |    ✅     |
+|                    | `list_signals`                                                                                    |     -     |
+| **アニメーション** | `create_animation`                                                                                |    ✅     |
+|                    | `add_animation_track`, `add_animation_key`, `play_animation`, `stop_animation`, `list_animations` |     -     |
+| **デバッグ**       | `get_editor_log`, `clear_editor_log`                                                              |     -     |
 
-## プラグイン構成
+## Undo/Redo について
 
-```
-addons/
-└── godot_mcp/
-    ├── plugin.cfg          # プラグイン定義
-    ├── plugin.gd           # メインプラグインスクリプト
-    ├── http_server.gd      # HTTP リクエスト処理
-    └── command_handler.gd  # コマンド実行ロジック
-```
+すべての破壊的な操作（ノード追加、プロパティ変更、シグナル接続など）は、Godot の `EditorUndoRedoManager` を介して実行されます。
+これにより、AI が行った操作を `Ctrl+Z` で個別に取り消したり、やり直したりすることが可能です。
 
----
+## 開発者向け: 新しいコマンドの追加
 
-## 対応コマンド（第一弾）
-
-| コマンド       | 説明             | EditorInterface API                      |
-| -------------- | ---------------- | ---------------------------------------- |
-| `add_node`     | ノード追加       | `get_edited_scene_root()`, `add_child()` |
-| `remove_node`  | ノード削除       | `get_node()`, `queue_free()`             |
-| `set_property` | プロパティ設定   | `set()`                                  |
-| `save_scene`   | シーン保存       | `save_scene()`                           |
-| `get_tree`     | ノードツリー取得 | 再帰的に取得                             |
-
----
-
-## 実装例
-
-### plugin.gd
-
-```gdscript
-@tool
-extends EditorPlugin
-
-var http_server: HTTPServer
-
-func _enter_tree():
-    http_server = HTTPServer.new()
-    http_server.start(6060)
-    add_child(http_server)
-    print("Godot MCP Plugin started on port 6060")
-
-func _exit_tree():
-    http_server.stop()
-```
-
-### command_handler.gd（Undo/Redo 対応）
-
-```gdscript
-func handle_add_node(params: Dictionary) -> Dictionary:
-    var root = EditorInterface.get_edited_scene_root()
-    var parent_path = params.get("parent", ".")
-    var parent = root.get_node(parent_path) if parent_path != "." else root
-
-    var new_node = ClassDB.instantiate(params["node_type"])
-    new_node.name = params["name"]
-    new_node.owner = root
-
-    # Undo/Redo 対応（エディターの履歴に統合）
-    var ur = get_undo_redo()
-    ur.create_action("Add Node via LLM: " + params["name"])
-    ur.add_do_method(parent, "add_child", new_node)
-    ur.add_do_reference(new_node)
-    ur.add_undo_method(parent, "remove_child", new_node)
-    ur.commit_action()
-
-    return {"success": true, "node": new_node.get_path()}
-```
-
----
-
-## Rust CLI 側の変更
-
-新しいコマンドを追加:
-
-```bash
-godot-mcp-rs tool live-add-node --port 6060 --parent . --name HealthBar --type ProgressBar
-```
-
-内部で HTTP POST を送信:
-
-```rust
-reqwest::Client::new()
-    .post("http://localhost:6060/command")
-    .json(&json!({
-        "command": "add_node",
-        "params": { "parent": ".", "name": "HealthBar", "node_type": "ProgressBar" }
-    }))
-    .send()
-```
-
----
-
-## 検証計画
-
-1. プラグイン有効化後、`http://localhost:6060/ping` でヘルスチェック
-2. `add_node` コマンドでエディター内にノードが追加されることを確認
-3. エディターの Undo が機能することを確認
+1. `command_handler.gd` の `handle_command` match ステートメントに新しいケースを追加します。
+2. 対応する `_handle_xxxx` 関数を実装し、必要に応じて `ur.create_action()` を使用して Undo/Redo を登録します。
+3. Rust CLI (`src/cli.rs`) に対応する `LiveXXXX` コマンドを追加します。

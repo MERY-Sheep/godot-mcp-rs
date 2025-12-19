@@ -3,7 +3,7 @@
 ## 概要
 
 LLM（Claude, Cursor 等）が Godot プロジェクトを高度に操作・分析するための MCP サーバーです。
-単なるファイル操作ではなく、Godot 独自の `tscn`, `gd`, `tres` ファイルを内部でパースして構造を理解し、さらに**プロセスの実行制御**も行うことで、AI による「自律デバッグループ」を実現します。
+ファイルベースの静的解析に加え、**Godot エディタープラグイン**を介したリアルタイム操作を統合することで、AI がエディターと同期しながら開発を進める「ライブ・デベロップメント」を実現します。
 
 ## システム構成
 
@@ -13,83 +13,75 @@ flowchart TB
         Client["AI (LLM)"]
     end
 
-    subgraph Server["godot-mcp-rs"]
+    subgraph Server["godot-mcp-rs (Rust)"]
         direction TB
         MCP["MCP Server Protocol Layer (rmcp)"]
         Handler["ServerHandler (GodotTools)"]
 
-        subgraph Tools["Tools (src/tools/)"]
+        subgraph Tools["Tools (src/tools/ / src/cli.rs)"]
             direction LR
             ED["Editor/Run<br/>(実行・デバッグ)"]
             PT["Project<br/>(探索・統計・検証)"]
-            ST["Scene<br/>(シーン操作)"]
-            SCT["Script<br/>(GDScript編集)"]
-            RT["Resource<br/>(リソース)"]
+            LIVE["Live Commands<br/>(リアルタイム操作)"]
         end
 
         subgraph Parsers["Parsers (src/godot/)"]
             direction LR
             TSCN["TSCN Parser"]
             GD["GDScript Parser"]
-            TRES["TRES Parser"]
-        end
-
-        subgraph Data["Static Data"]
-            NT["Node Type Database"]
-            TPL["Scene Templates"]
         end
     end
 
-    subgraph FS["Godot Project File System"]
+    subgraph GodotEditor["Godot Editor (Runtime)"]
+        Plugin["Godot MCP Plugin<br/>(TCP Server)"]
+        EditorCore["EditorInterface API"]
+        History["Undo/Redo Manager"]
+    end
+
+    subgraph FS["File System"]
         FILES[".tscn / .gd / .tres ..."]
-    end
-
-    subgraph Godot["Godot Runtime"]
-        Runtime["Game Process"]
-        Output["Debug Output (Stdout/Stderr)"]
     end
 
     Client <-->|"JSON-RPC"| MCP
     MCP <--> Handler
     Handler --> Tools
     Tools --> Parsers
-    Tools --> Data
 
-    %% Execution Flow
-    Tools -->|"Spawn"| Runtime
-    Runtime -->|"Write"| Output
-    Tools <--"Read"| Output
+    %% Live Flow
+    Tools <-->|"HTTP/JSON"| Plugin
+    Plugin <--> EditorCore
+    EditorCore --> History
 
     Parsers <--> FS
+    EditorCore <--> FS
 ```
 
-## ツール分類 (全 34 種)
+## ツール分類 (全 56 種)
 
-| カテゴリ   | ツール数 | 主な機能                                         |
-| ---------- | -------- | ------------------------------------------------ |
-| Editor/Run | 6        | プロジェクト実行、停止、ログ取得、バージョン確認 |
-| Project    | 7        | ファイル探索、検索、統計、検証、ノード型情報     |
-| Scene      | 13       | 作成、読取、編集、比較、テンプレート生成         |
-| Script     | 6        | 作成、解析、関数/変数追加                        |
-| Resource   | 2        | リソース一覧、パース                             |
+| カテゴリ                | ツール数 | 主な機能                                                 |
+| :---------------------- | :------: | :------------------------------------------------------- |
+| **Live (リアルタイム)** |    22    | エディター操作 (add, remove, rename, anim, signal, etc.) |
+| **Editor/Run**          |    6     | プロジェクト実行、停止、ログ取得、バージョン確認         |
+| **Project**             |    7     | ファイル探索、検索、統計、検証、ノード型情報             |
+| **Scene**               |    13    | ファイルベースの作成、読取、編集、比較、テンプレート     |
+| **Script**              |    6     | ファイルベースの作成、解析、関数/変数追加                |
+| **Resource**            |    2     | リソース一覧、パース                                     |
 
-## 各モジュールの役割
+## 主要コンポーネント
 
-### 1. ツールレイヤー (`src/tools/`)
+### 1. リアルタイム・レイヤー (`live-*` コマンド)
 
-- **`editor.rs`**: **NEW** Godot の子プロセス管理、PID 追跡、非同期出力キャプチャ
-- **`project.rs`**: 統計、検証、ノード型情報
-- **`scene.rs`**: ノード操作、テンプレート生成
-- **`script.rs`**: GDScript 編集
+Rust CLI から Godot エディター内のプラグインに対して HTTP/JSON リクエストを送信します。
 
-### 2. パーサーレイヤー (`src/godot/`)
+- **Undo/Redo 統合**: `EditorUndoRedoManager` を使用することで、AI による変更を人間の操作と同様に扱えます。
+- **同期実行**: インメモリーで処理されるため、ファイルの保存を待たずに即座に変更が反映されます。
 
-- TSCN, GDScript, TRES の各パーサー
+### 2. 静的解析・レイヤー (`src/godot/`)
 
-## エディター制御の仕組み (Status Management)
+Godot のカスタムシリアライズ形式（TSCN/TRES）を Rust でパースします。
 
-MCP はステートレスなプロトコルのため、プロセスの状態を以下のように永続化して管理します。
+- エディターを起動していない状態でも、大規模なリファクタリングやシーン構造の分析が可能です。
 
-1. **PID 管理**: プロジェクトルート直下の `.godot_mcp_pid` にプロセス ID を保持。
-2. **出力バッファ**: `.godot_mcp_output` に標準出力と標準エラーを統合して書き込み、`get_debug_output` で要求された行数を末尾から読み取ります。
-3. **Godot パス**: 環境変数 `GODOT_PATH` または PATH 内の実行ファイルを自動検出します。
+### 3. プロセス制御レイヤー
+
+`.godot_mcp_pid` や `.godot_mcp_output` ファイルを使用して、ステートレスな MCP 接続間で Godot 実行プロセスの生存確認やログ出力を永続化します。
