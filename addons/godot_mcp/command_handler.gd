@@ -12,7 +12,7 @@ func handle_command(data: Dictionary) -> Dictionary:
 	
 	match command:
 		"ping":
-			return {"success": true, "message": "pong", "version": "1.0.0"}
+			return {"success": true, "message": "pong", "version": "1.1.0"}
 		"add_node":
 			return _handle_add_node(params)
 		"remove_node":
@@ -23,6 +23,12 @@ func handle_command(data: Dictionary) -> Dictionary:
 			return _handle_get_tree(params)
 		"save_scene":
 			return _handle_save_scene(params)
+		"connect_signal":
+			return _handle_connect_signal(params)
+		"disconnect_signal":
+			return _handle_disconnect_signal(params)
+		"list_signals":
+			return _handle_list_signals(params)
 		_:
 			return {"error": "Unknown command: " + command}
 
@@ -150,3 +156,142 @@ func _handle_save_scene(params: Dictionary) -> Dictionary:
 		return {"error": "Failed to save scene: " + str(err)}
 	
 	return {"success": true, "path": scene_path}
+
+# === Signal Commands ===
+
+func _handle_connect_signal(params: Dictionary) -> Dictionary:
+	var root = EditorInterface.get_edited_scene_root()
+	if not root:
+		return {"error": "No scene is open"}
+	
+	var source_path = params.get("source", ".")
+	var signal_name = params.get("signal", "")
+	var target_path = params.get("target", ".")
+	var method_name = params.get("method", "")
+	
+	if signal_name == "":
+		return {"error": "Signal name is required"}
+	if method_name == "":
+		return {"error": "Method name is required"}
+	
+	var source = root.get_node_or_null(source_path) if source_path != "." else root
+	var target = root.get_node_or_null(target_path) if target_path != "." else root
+	
+	if not source:
+		return {"error": "Source node not found: " + source_path}
+	if not target:
+		return {"error": "Target node not found: " + target_path}
+	
+	# シグナルが存在するか確認
+	if not source.has_signal(signal_name):
+		return {"error": "Signal not found: " + signal_name + " on " + source_path}
+	
+	# 既に接続されているか確認
+	if source.is_connected(signal_name, Callable(target, method_name)):
+		return {"error": "Signal already connected"}
+	
+	# Undo/Redo 対応
+	var ur = plugin.get_undo_redo()
+	ur.create_action("Connect Signal via LLM: " + signal_name)
+	ur.add_do_method(source, "connect", signal_name, Callable(target, method_name))
+	ur.add_undo_method(source, "disconnect", signal_name, Callable(target, method_name))
+	ur.commit_action()
+	
+	return {
+		"success": true,
+		"source": source_path,
+		"signal": signal_name,
+		"target": target_path,
+		"method": method_name
+	}
+
+func _handle_disconnect_signal(params: Dictionary) -> Dictionary:
+	var root = EditorInterface.get_edited_scene_root()
+	if not root:
+		return {"error": "No scene is open"}
+	
+	var source_path = params.get("source", ".")
+	var signal_name = params.get("signal", "")
+	var target_path = params.get("target", ".")
+	var method_name = params.get("method", "")
+	
+	if signal_name == "":
+		return {"error": "Signal name is required"}
+	if method_name == "":
+		return {"error": "Method name is required"}
+	
+	var source = root.get_node_or_null(source_path) if source_path != "." else root
+	var target = root.get_node_or_null(target_path) if target_path != "." else root
+	
+	if not source:
+		return {"error": "Source node not found: " + source_path}
+	if not target:
+		return {"error": "Target node not found: " + target_path}
+	
+	# 接続されているか確認
+	if not source.is_connected(signal_name, Callable(target, method_name)):
+		return {"error": "Signal is not connected"}
+	
+	# Undo/Redo 対応
+	var ur = plugin.get_undo_redo()
+	ur.create_action("Disconnect Signal via LLM: " + signal_name)
+	ur.add_do_method(source, "disconnect", signal_name, Callable(target, method_name))
+	ur.add_undo_method(source, "connect", signal_name, Callable(target, method_name))
+	ur.commit_action()
+	
+	return {
+		"success": true,
+		"source": source_path,
+		"signal": signal_name,
+		"target": target_path,
+		"method": method_name,
+		"action": "disconnected"
+	}
+
+func _handle_list_signals(params: Dictionary) -> Dictionary:
+	var root = EditorInterface.get_edited_scene_root()
+	if not root:
+		return {"error": "No scene is open"}
+	
+	var node_path = params.get("node_path", ".")
+	var node = root.get_node_or_null(node_path) if node_path != "." else root
+	
+	if not node:
+		return {"error": "Node not found: " + node_path}
+	
+	var signals = []
+	for sig in node.get_signal_list():
+		var sig_info = {
+			"name": sig["name"],
+			"args": []
+		}
+		for arg in sig["args"]:
+			sig_info["args"].append(arg["name"])
+		signals.append(sig_info)
+	
+	# 接続情報も取得
+	var connections = []
+	for conn in node.get_incoming_connections():
+		connections.append({
+			"signal": conn["signal"].get_name(),
+			"from": str(conn["signal"].get_object().get_path()) if conn["signal"].get_object() else "unknown",
+			"method": conn["callable"].get_method()
+		})
+	
+	for sig_name in node.get_signal_list().map(func(s): return s["name"]):
+		for conn in node.get_signal_connection_list(sig_name):
+			connections.append({
+				"signal": sig_name,
+				"from": str(node.get_path()),
+				"to": str(conn["callable"].get_object().get_path()) if conn["callable"].get_object() else "unknown",
+				"method": conn["callable"].get_method()
+			})
+	
+	return {
+		"success": true,
+		"node": node_path,
+		"type": node.get_class(),
+		"signals": signals,
+		"connections": connections
+	}
+

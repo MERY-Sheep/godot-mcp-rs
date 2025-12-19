@@ -361,6 +361,42 @@ pub enum ToolCommands {
         #[arg(long, default_value = "6060")]
         port: u16,
     },
+
+    /// Connect a signal between nodes via the Godot plugin
+    LiveConnectSignal {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = ".")]
+        source: String,
+        #[arg(long)]
+        signal: String,
+        #[arg(long, default_value = ".")]
+        target: String,
+        #[arg(long)]
+        method: String,
+    },
+
+    /// Disconnect a signal between nodes via the Godot plugin
+    LiveDisconnectSignal {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = ".")]
+        source: String,
+        #[arg(long)]
+        signal: String,
+        #[arg(long, default_value = ".")]
+        target: String,
+        #[arg(long)]
+        method: String,
+    },
+
+    /// List signals of a node via the Godot plugin
+    LiveListSignals {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = ".")]
+        node_path: String,
+    },
 }
 
 /// Execute CLI command
@@ -740,6 +776,54 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         }
         ToolCommands::LiveSaveScene { port } => {
             return run_live_command(port, "save_scene", serde_json::json!({})).await;
+        }
+        ToolCommands::LiveConnectSignal {
+            port,
+            source,
+            signal,
+            target,
+            method,
+        } => {
+            return run_live_command(
+                port,
+                "connect_signal",
+                serde_json::json!({
+                    "source": source,
+                    "signal": signal,
+                    "target": target,
+                    "method": method
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LiveDisconnectSignal {
+            port,
+            source,
+            signal,
+            target,
+            method,
+        } => {
+            return run_live_command(
+                port,
+                "disconnect_signal",
+                serde_json::json!({
+                    "source": source,
+                    "signal": signal,
+                    "target": target,
+                    "method": method
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LiveListSignals { port, node_path } => {
+            return run_live_command(
+                port,
+                "list_signals",
+                serde_json::json!({
+                    "node_path": node_path
+                }),
+            )
+            .await;
         }
     };
 
