@@ -73,6 +73,8 @@ set GODOT_PATH=C:\path\to\godot.exe
 }
 ```
 
+See [mcp_config.json.example](mcp_config.json.example) for more options.
+
 ## License
 
 MIT

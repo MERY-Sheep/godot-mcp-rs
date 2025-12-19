@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "godot": {
+      "command": "C:/path/to/godot-mcp-rs/target/release/godot-mcp-rs.exe",
+      "args": [],
+      "env": {
+        "GODOT_PATH": "C:/path/to/godot.exe"
+      }
+    }
+  }
+}

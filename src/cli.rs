@@ -1,5 +1,6 @@
 //! CLI Mode - Direct operation from terminal or scripts.
 
+use crate::godot::commands::*;
 use crate::tools::GodotTools;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -362,6 +363,14 @@ pub enum ToolCommands {
         port: u16,
     },
 
+    /// Open a scene in the Godot editor via the Godot plugin
+    LiveOpenScene {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long)]
+        scene_path: String,
+    },
+
     /// Connect a signal between nodes via the Godot plugin
     LiveConnectSignal {
         #[arg(long, default_value = "6060")]
@@ -500,6 +509,12 @@ pub enum ToolCommands {
         #[arg(long)]
         z: Option<f32>,
     },
+
+    /// Reload the Godot MCP plugin (picks up code changes)
+    LiveReloadPlugin {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+    },
 }
 
 /// Execute CLI command
@@ -606,7 +621,7 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             let tools = GodotTools::with_project(project);
             let mut map = serde_json::Map::new();
-            map.insert("scene".to_string(), serde_json::Value::String(scene));
+            map.insert("scene_path".to_string(), serde_json::Value::String(scene));
             map.insert("parent".to_string(), serde_json::Value::String(parent));
             map.insert("name".to_string(), serde_json::Value::String(name));
             map.insert(
@@ -622,7 +637,7 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             let tools = GodotTools::with_project(project);
             let mut map = serde_json::Map::new();
-            map.insert("scene".to_string(), serde_json::Value::String(scene));
+            map.insert("scene_path".to_string(), serde_json::Value::String(scene));
             map.insert(
                 "node_path".to_string(),
                 serde_json::Value::String(node_path),
@@ -638,7 +653,7 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             let tools = GodotTools::with_project(project);
             let mut map = serde_json::Map::new();
-            map.insert("scene".to_string(), serde_json::Value::String(scene));
+            map.insert("scene_path".to_string(), serde_json::Value::String(scene));
             map.insert(
                 "node_path".to_string(),
                 serde_json::Value::String(node_path),
@@ -650,7 +665,7 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         ToolCommands::GetNodeTree { project, scene } => {
             let tools = GodotTools::with_project(project);
             let mut map = serde_json::Map::new();
-            map.insert("scene".to_string(), serde_json::Value::String(scene));
+            map.insert("path".to_string(), serde_json::Value::String(scene));
             tools.handle_get_node_tree(Some(map)).await
         }
         ToolCommands::ValidateTscn { project, path } => {
@@ -828,7 +843,7 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
 
         // === Live Commands (via Godot Plugin HTTP) ===
         ToolCommands::LivePing { port } => {
-            return run_live_command(port, "ping", serde_json::json!({})).await;
+            return run_live_command(port, GodotCommand::Ping).await;
         }
         ToolCommands::LiveAddNode {
             port,
@@ -838,11 +853,10 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             return run_live_command(
                 port,
-                "add_node",
-                serde_json::json!({
-                    "parent": parent,
-                    "name": name,
-                    "node_type": node_type
+                GodotCommand::AddNode(AddNodeParams {
+                    parent,
+                    name,
+                    node_type,
                 }),
             )
             .await;
@@ -850,15 +864,12 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         ToolCommands::LiveRemoveNode { port, node_path } => {
             return run_live_command(
                 port,
-                "remove_node",
-                serde_json::json!({
-                    "node_path": node_path
-                }),
+                GodotCommand::RemoveNode(RemoveNodeParams { node_path }),
             )
             .await;
         }
         ToolCommands::LiveGetTree { port } => {
-            return run_live_command(port, "get_tree", serde_json::json!({})).await;
+            return run_live_command(port, GodotCommand::GetTree).await;
         }
         ToolCommands::LiveSetProperty {
             port,
@@ -868,17 +879,23 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             return run_live_command(
                 port,
-                "set_property",
-                serde_json::json!({
-                    "node_path": node_path,
-                    "property": property,
-                    "value": value
+                GodotCommand::SetProperty(SetPropertyParams {
+                    node_path,
+                    property,
+                    value: serde_json::from_str(&value).unwrap_or(serde_json::Value::String(value)),
                 }),
             )
             .await;
         }
         ToolCommands::LiveSaveScene { port } => {
-            return run_live_command(port, "save_scene", serde_json::json!({})).await;
+            return run_live_command(port, GodotCommand::SaveScene).await;
+        }
+        ToolCommands::LiveOpenScene { port, scene_path } => {
+            return run_live_command(
+                port,
+                GodotCommand::OpenScene(OpenSceneParams { scene_path }),
+            )
+            .await;
         }
         ToolCommands::LiveConnectSignal {
             port,
@@ -889,12 +906,11 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             return run_live_command(
                 port,
-                "connect_signal",
-                serde_json::json!({
-                    "source": source,
-                    "signal": signal,
-                    "target": target,
-                    "method": method
+                GodotCommand::ConnectSignal(SignalParams {
+                    source,
+                    signal,
+                    target,
+                    method,
                 }),
             )
             .await;
@@ -908,12 +924,11 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             return run_live_command(
                 port,
-                "disconnect_signal",
-                serde_json::json!({
-                    "source": source,
-                    "signal": signal,
-                    "target": target,
-                    "method": method
+                GodotCommand::DisconnectSignal(SignalParams {
+                    source,
+                    signal,
+                    target,
+                    method,
                 }),
             )
             .await;
@@ -921,10 +936,7 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         ToolCommands::LiveListSignals { port, node_path } => {
             return run_live_command(
                 port,
-                "list_signals",
-                serde_json::json!({
-                    "node_path": node_path
-                }),
+                GodotCommand::ListSignals(NodePathParams { node_path }),
             )
             .await;
         }
@@ -938,11 +950,10 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             return run_live_command(
                 port,
-                "create_animation",
-                serde_json::json!({
-                    "player": player,
-                    "name": name,
-                    "length": length
+                GodotCommand::CreateAnimation(CreateAnimationParams {
+                    player,
+                    name,
+                    length,
                 }),
             )
             .await;
@@ -956,12 +967,11 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             return run_live_command(
                 port,
-                "add_animation_track",
-                serde_json::json!({
-                    "player": player,
-                    "animation": animation,
-                    "track_path": track_path,
-                    "track_type": track_type
+                GodotCommand::AddAnimationTrack(AddAnimationTrackParams {
+                    player,
+                    animation,
+                    track_path,
+                    track_type,
                 }),
             )
             .await;
@@ -976,13 +986,12 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             return run_live_command(
                 port,
-                "add_animation_key",
-                serde_json::json!({
-                    "player": player,
-                    "animation": animation,
-                    "track": track,
-                    "time": time,
-                    "value": value
+                GodotCommand::AddAnimationKey(AddAnimationKeyParams {
+                    player,
+                    animation,
+                    track: track as usize,
+                    time,
+                    value: serde_json::from_str(&value).unwrap_or(serde_json::Value::String(value)),
                 }),
             )
             .await;
@@ -994,48 +1003,32 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         } => {
             return run_live_command(
                 port,
-                "play_animation",
-                serde_json::json!({
-                    "player": player,
-                    "animation": animation
-                }),
+                GodotCommand::PlayAnimation(PlayAnimationParams { player, animation }),
             )
             .await;
         }
         ToolCommands::LiveStopAnimation { port, player } => {
             return run_live_command(
                 port,
-                "stop_animation",
-                serde_json::json!({
-                    "player": player
-                }),
+                GodotCommand::StopAnimation(StopAnimationParams { player }),
             )
             .await;
         }
         ToolCommands::LiveListAnimations { port, player } => {
             return run_live_command(
                 port,
-                "list_animations",
-                serde_json::json!({
-                    "player": player
-                }),
+                GodotCommand::ListAnimations(StopAnimationParams { player }),
             )
             .await;
         }
 
         // === Live Debug Log Commands ===
         ToolCommands::LiveGetEditorLog { port, lines } => {
-            return run_live_command(
-                port,
-                "get_editor_log",
-                serde_json::json!({
-                    "lines": lines
-                }),
-            )
-            .await;
+            return run_live_command(port, GodotCommand::GetEditorLog(GetLogParams { lines }))
+                .await;
         }
         ToolCommands::LiveClearEditorLog { port } => {
-            return run_live_command(port, "clear_editor_log", serde_json::json!({})).await;
+            return run_live_command(port, GodotCommand::ClearEditorLog).await;
         }
 
         // === Live Scene Instance Commands ===
@@ -1048,24 +1041,27 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
             y,
             z,
         } => {
-            let mut params = serde_json::json!({
-                "scene_path": scene_path,
-                "parent": parent
-            });
-
-            if let Some(n) = name {
-                params["name"] = serde_json::Value::String(n);
-            }
-
-            if x.is_some() || y.is_some() || z.is_some() {
-                params["position"] = serde_json::json!({
-                    "x": x.unwrap_or(0.0),
-                    "y": y.unwrap_or(0.0),
-                    "z": z.unwrap_or(0.0)
-                });
-            }
-
-            return run_live_command(port, "instantiate_scene", params).await;
+            return run_live_command(
+                port,
+                GodotCommand::InstantiateScene(InstantiateSceneParams {
+                    scene_path,
+                    parent,
+                    name,
+                    position: if x.is_some() || y.is_some() || z.is_some() {
+                        Some(Position3D {
+                            x: x.unwrap_or(0.0),
+                            y: y.unwrap_or(0.0),
+                            z: z.unwrap_or(0.0),
+                        })
+                    } else {
+                        None
+                    },
+                }),
+            )
+            .await;
+        }
+        ToolCommands::LiveReloadPlugin { port } => {
+            return run_live_command(port, GodotCommand::ReloadPlugin).await;
         }
     };
 
@@ -1087,22 +1083,14 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
 }
 
 /// Execute a live command via HTTP to the Godot plugin
-async fn run_live_command(
-    port: u16,
-    command: &str,
-    params: serde_json::Value,
-) -> anyhow::Result<()> {
+async fn run_live_command(port: u16, command: GodotCommand) -> anyhow::Result<()> {
     let url = format!("http://localhost:{}", port);
-    let body = serde_json::json!({
-        "command": command,
-        "params": params
-    });
 
     let client = reqwest::Client::new();
     let response = client
         .post(&url)
         .header("Content-Type", "application/json")
-        .body(body.to_string())
+        .json(&command)
         .send()
         .await;
 

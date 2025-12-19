@@ -74,6 +74,8 @@ cargo build --release
 }
 ```
 
+詳細は [mcp_config.json.example](mcp_config.json.example) を参照してください。
+
 ## CLI モード
 
 MCP サーバーとしてだけでなく、単体の CLI ツールとしても利用可能です。

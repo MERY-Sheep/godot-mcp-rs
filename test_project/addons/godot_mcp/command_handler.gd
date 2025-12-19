@@ -10,6 +10,41 @@ func handle_command(data: Dictionary) -> Dictionary:
 	var command = data.get("command", "")
 	var params = data.get("params", {})
 	
+	# Validation schemas for each command
+	var schemas = {
+		"ping": {},
+		"add_node": {"parent": TYPE_STRING, "name": TYPE_STRING, "node_type": TYPE_STRING},
+		"remove_node": {"node_path": TYPE_STRING},
+		"set_property": {"node_path": TYPE_STRING, "property": TYPE_STRING, "value": [TYPE_NIL, TYPE_BOOL, TYPE_INT, TYPE_FLOAT, TYPE_STRING, TYPE_COLOR, TYPE_VECTOR2, TYPE_VECTOR3, TYPE_ARRAY, TYPE_DICTIONARY]},
+		"get_tree": {},
+		"save_scene": {},
+		"open_scene": {"scene_path": TYPE_STRING},
+		"connect_signal": {"source": TYPE_STRING, "signal": TYPE_STRING, "target": TYPE_STRING, "method": TYPE_STRING},
+		"disconnect_signal": {"source": TYPE_STRING, "signal": TYPE_STRING, "target": TYPE_STRING, "method": TYPE_STRING},
+		"list_signals": {"node_path": TYPE_STRING},
+		"get_properties": {"node_path": TYPE_STRING},
+		"duplicate_node": {"node_path": TYPE_STRING}, # name is optional
+		"rename_node": {"node_path": TYPE_STRING, "new_name": TYPE_STRING},
+		"reparent_node": {"node_path": TYPE_STRING, "new_parent": TYPE_STRING},
+		"create_animation": {"player": TYPE_STRING, "name": TYPE_STRING, "length": TYPE_FLOAT},
+		"add_animation_track": {"player": TYPE_STRING, "animation": TYPE_STRING, "track_path": TYPE_STRING, "track_type": TYPE_STRING},
+		"add_animation_key": {"player": TYPE_STRING, "animation": TYPE_STRING, "track": TYPE_INT, "time": TYPE_FLOAT}, # value is variant
+		"play_animation": {"player": TYPE_STRING, "animation": TYPE_STRING},
+		"stop_animation": {"player": TYPE_STRING},
+		"list_animations": {"player": TYPE_STRING},
+		"get_editor_log": {},  # lines is optional, handled in function
+		"clear_editor_log": {},
+		"instantiate_scene": {"scene_path": TYPE_STRING, "parent": TYPE_STRING},
+		"reload_plugin": {}
+	}
+	
+	if not schemas.has(command):
+		return {"error": "Unknown command: " + command}
+	
+	var error = _validate_params(params, schemas[command])
+	if error != "":
+		return {"error": "Invalid parameters for command " + command + ": " + error}
+	
 	match command:
 		"ping":
 			return {"success": true, "message": "pong", "version": "1.1.0"}
@@ -23,6 +58,8 @@ func handle_command(data: Dictionary) -> Dictionary:
 			return _handle_get_tree(params)
 		"save_scene":
 			return _handle_save_scene(params)
+		"open_scene":
+			return _handle_open_scene(params)
 		"connect_signal":
 			return _handle_connect_signal(params)
 		"disconnect_signal":
@@ -37,7 +74,6 @@ func handle_command(data: Dictionary) -> Dictionary:
 			return _handle_rename_node(params)
 		"reparent_node":
 			return _handle_reparent_node(params)
-		# Task B: Animation
 		"create_animation":
 			return _handle_create_animation(params)
 		"add_animation_track":
@@ -50,16 +86,35 @@ func handle_command(data: Dictionary) -> Dictionary:
 			return _handle_stop_animation(params)
 		"list_animations":
 			return _handle_list_animations(params)
-		# Task C: Debug Log
 		"get_editor_log":
 			return _handle_get_editor_log(params)
 		"clear_editor_log":
 			return _handle_clear_editor_log(params)
-		# Task D: Instantiate Scene
 		"instantiate_scene":
 			return _handle_instantiate_scene(params)
+		"reload_plugin":
+			return _handle_reload_plugin(params)
 		_:
-			return {"error": "Unknown command: " + command}
+			return {"error": "Bug: Command in schema but not in match: " + command}
+
+func _validate_params(params: Dictionary, schema: Dictionary) -> String:
+	for key in schema.keys():
+		if not params.has(key):
+			return "Missing required parameter: " + key
+		
+		var expected = schema[key]
+		var actual = typeof(params[key])
+		
+		if expected is Array:
+			if not actual in expected:
+				return "Invalid type for " + key + ": expected one of " + str(expected) + ", got " + str(actual)
+		elif expected == TYPE_FLOAT and actual == TYPE_INT:
+			# Godot JSON parsing often results in TYPE_INT for whole numbers
+			continue
+		elif actual != expected:
+			return "Invalid type for " + key + ": expected " + str(expected) + ", got " + str(actual)
+	
+	return ""
 
 func _handle_add_node(params: Dictionary) -> Dictionary:
 	var root = EditorInterface.get_edited_scene_root()
@@ -185,6 +240,25 @@ func _handle_save_scene(params: Dictionary) -> Dictionary:
 		return {"error": "Failed to save scene: " + str(err)}
 	
 	return {"success": true, "path": scene_path}
+
+func _handle_open_scene(params: Dictionary) -> Dictionary:
+	var scene_path = params.get("scene_path", "")
+	
+	if scene_path == "":
+		return {"error": "scene_path is required"}
+	
+	# Add res:// prefix if not present
+	if not scene_path.begins_with("res://"):
+		scene_path = "res://" + scene_path
+	
+	# Check if file exists
+	if not FileAccess.file_exists(scene_path):
+		return {"error": "Scene file not found: " + scene_path}
+	
+	# Open the scene in the editor
+	EditorInterface.open_scene_from_path(scene_path)
+	
+	return {"success": true, "opened": scene_path}
 
 # === Signal Commands ===
 
@@ -736,3 +810,32 @@ func _handle_instantiate_scene(params: Dictionary) -> Dictionary:
 		"instance_name": instance.name,
 		"instance_path": str(instance.get_path())
 	}
+
+# === Reload Plugin ===
+
+func _handle_reload_plugin(_params: Dictionary) -> Dictionary:
+	# Get the plugin name
+	var plugin_name = "godot_mcp"
+	
+	# Schedule the reload to happen after returning the response
+	# This is necessary because disabling the plugin would kill the current connection
+	call_deferred("_do_reload_plugin", plugin_name)
+	
+	return {
+		"success": true,
+		"message": "Plugin reload scheduled",
+		"plugin": plugin_name
+	}
+
+func _do_reload_plugin(plugin_name: String) -> void:
+	# Wait a short moment to allow the response to be sent
+	await get_tree().create_timer(0.5).timeout
+	
+	# Disable then enable the plugin
+	EditorInterface.set_plugin_enabled(plugin_name, false)
+	
+	# Wait for the plugin to fully disable
+	await get_tree().create_timer(0.1).timeout
+	
+	EditorInterface.set_plugin_enabled(plugin_name, true)
+	print("[MCP] Plugin reloaded successfully")
