@@ -1,13 +1,18 @@
 //! Godot MCP Server
 //!
 //! LLMがGodotプロジェクトを操作するためのMCPサーバー
+//! CLIモードでは直接ツールを実行可能
 
+mod cli;
 mod godot;
 mod server;
-mod tools;
+pub mod tools;
 
 use anyhow::Result;
+use clap::Parser;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use cli::{Cli, Commands};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -20,10 +25,26 @@ async fn main() -> Result<()> {
         .with(tracing_subscriber::fmt::layer().with_writer(std::io::stderr))
         .init();
 
-    tracing::info!("Godot MCP Server starting...");
+    // コマンドライン引数をパース
+    let args: Vec<String> = std::env::args().collect();
 
-    // MCPサーバー起動
-    server::run().await?;
+    // 引数がない場合、またはserveの場合はMCPサーバーモード
+    if args.len() == 1 {
+        tracing::info!("Godot MCP Server starting (MCP mode)...");
+        server::run().await?;
+    } else {
+        // CLIモード
+        let cli = Cli::parse();
+        match cli.command {
+            Commands::Serve => {
+                tracing::info!("Godot MCP Server starting (MCP mode)...");
+                server::run().await?;
+            }
+            Commands::Tool(tool_cmd) => {
+                cli::run_cli(tool_cmd).await?;
+            }
+        }
+    }
 
     Ok(())
 }

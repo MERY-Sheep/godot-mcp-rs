@@ -13,7 +13,7 @@ use crate::godot::tscn::{GodotScene, SceneNode};
 
 impl GodotTools {
     /// create_scene - シーン作成
-    pub(super) async fn handle_create_scene(
+    pub async fn handle_create_scene(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -49,7 +49,7 @@ impl GodotTools {
     }
 
     /// read_scene - シーン読み取り
-    pub(super) async fn handle_read_scene(
+    pub async fn handle_read_scene(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -86,7 +86,7 @@ impl GodotTools {
     }
 
     /// add_node - ノード追加
-    pub(super) async fn handle_add_node(
+    pub async fn handle_add_node(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -120,7 +120,7 @@ impl GodotTools {
     }
 
     /// remove_node - ノード削除
-    pub(super) async fn handle_remove_node(
+    pub async fn handle_remove_node(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -151,7 +151,7 @@ impl GodotTools {
     }
 
     /// set_node_property - プロパティ設定
-    pub(super) async fn handle_set_node_property(
+    pub async fn handle_set_node_property(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -182,7 +182,7 @@ impl GodotTools {
     }
 
     /// get_node_tree - ノードツリー取得
-    pub(super) async fn handle_get_node_tree(
+    pub async fn handle_get_node_tree(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -219,7 +219,7 @@ impl GodotTools {
     }
 
     /// validate_tscn - シーンバリデーション
-    pub(super) async fn handle_validate_tscn(
+    pub async fn handle_validate_tscn(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -286,7 +286,7 @@ impl GodotTools {
     }
 
     /// copy_scene - シーンコピー
-    pub(super) async fn handle_copy_scene(
+    pub async fn handle_copy_scene(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -313,7 +313,7 @@ impl GodotTools {
     }
 
     /// get_scene_metadata - シーンメタデータ取得
-    pub(super) async fn handle_get_scene_metadata(
+    pub async fn handle_get_scene_metadata(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -359,7 +359,7 @@ impl GodotTools {
     }
 
     /// compare_scenes - シーン比較
-    pub(super) async fn handle_compare_scenes(
+    pub async fn handle_compare_scenes(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -459,7 +459,7 @@ impl GodotTools {
     }
 
     /// export_scene_as_json - シーンJSONエクスポート
-    pub(super) async fn handle_export_scene_as_json(
+    pub async fn handle_export_scene_as_json(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -538,7 +538,7 @@ impl GodotTools {
     }
 
     /// batch_add_nodes - バッチノード追加
-    pub(super) async fn handle_batch_add_nodes(
+    pub async fn handle_batch_add_nodes(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -581,7 +581,7 @@ impl GodotTools {
     }
 
     /// create_scene_from_template - テンプレートからシーン作成
-    pub(super) async fn handle_create_scene_from_template(
+    pub async fn handle_create_scene_from_template(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {

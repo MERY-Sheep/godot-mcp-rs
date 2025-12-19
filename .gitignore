@@ -16,10 +16,14 @@ Thumbs.db
 .godot_mcp_pid
 .godot_mcp_output
 
-# Test data (Optional, if you want to keep them local)
-/test_project/
+# Test data (keep addons for plugin development)
+/test_project/*
+!/test_project/addons/
+!/test_project/project.godot
 test_mcp.py
 test_mcp2.py
+
+# NOTE: /addons/ (repository root) is NOT ignored - it contains the distributable plugin
 
 # Claude/System files
 .claude/

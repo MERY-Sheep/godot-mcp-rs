@@ -11,7 +11,7 @@ use crate::godot::tscn::GodotScene;
 
 impl GodotTools {
     /// list_project_files - プロジェクトファイル一覧
-    pub(super) async fn handle_list_project_files(
+    pub async fn handle_list_project_files(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -51,7 +51,7 @@ impl GodotTools {
     }
 
     /// read_file - ファイル読み取り
-    pub(super) async fn handle_read_file(
+    pub async fn handle_read_file(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -67,7 +67,7 @@ impl GodotTools {
     }
 
     /// list_all_scenes - 全シーン一覧
-    pub(super) async fn handle_list_all_scenes(
+    pub async fn handle_list_all_scenes(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -116,7 +116,7 @@ impl GodotTools {
     }
 
     /// search_in_project - プロジェクト内検索
-    pub(super) async fn handle_search_in_project(
+    pub async fn handle_search_in_project(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -211,7 +211,7 @@ impl GodotTools {
     }
 
     /// get_node_type_info - ノード型の詳細情報を取得
-    pub(super) async fn handle_get_node_type_info(
+    pub async fn handle_get_node_type_info(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -227,7 +227,7 @@ impl GodotTools {
     }
 
     /// get_project_stats - プロジェクト統計
-    pub(super) async fn handle_get_project_stats(
+    pub async fn handle_get_project_stats(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -308,7 +308,7 @@ impl GodotTools {
     }
 
     /// validate_project - プロジェクト検証
-    pub(super) async fn handle_validate_project(
+    pub async fn handle_validate_project(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {

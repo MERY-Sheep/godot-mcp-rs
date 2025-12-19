@@ -88,7 +88,7 @@ impl GodotTools {
     }
 
     /// get_godot_version - Godotバージョン取得
-    pub(super) async fn handle_get_godot_version(
+    pub async fn handle_get_godot_version(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -114,7 +114,7 @@ impl GodotTools {
     }
 
     /// run_project - プロジェクト実行
-    pub(super) async fn handle_run_project(
+    pub async fn handle_run_project(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -218,7 +218,7 @@ impl GodotTools {
     }
 
     /// stop_project - プロジェクト停止
-    pub(super) async fn handle_stop_project(
+    pub async fn handle_stop_project(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -269,7 +269,7 @@ impl GodotTools {
     }
 
     /// get_debug_output - デバッグ出力取得
-    pub(super) async fn handle_get_debug_output(
+    pub async fn handle_get_debug_output(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -319,7 +319,7 @@ impl GodotTools {
     }
 
     /// launch_editor - エディター起動
-    pub(super) async fn handle_launch_editor(
+    pub async fn handle_launch_editor(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -358,7 +358,7 @@ impl GodotTools {
     }
 
     /// get_running_status - 実行状態確認
-    pub(super) async fn handle_get_running_status(
+    pub async fn handle_get_running_status(
         &self,
         _args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {

@@ -8,7 +8,7 @@ use crate::godot::tres::GodotResource;
 
 impl GodotTools {
     /// list_resources - プロジェクト内のリソース一覧
-    pub(super) async fn handle_list_resources(
+    pub async fn handle_list_resources(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -68,7 +68,7 @@ impl GodotTools {
     }
 
     /// read_resource - リソースファイルを読み取り
-    pub(super) async fn handle_read_resource(
+    pub async fn handle_read_resource(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {

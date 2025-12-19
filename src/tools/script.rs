@@ -11,7 +11,7 @@ use crate::godot::tscn::GodotScene;
 
 impl GodotTools {
     /// create_script - スクリプト作成
-    pub(super) async fn handle_create_script(
+    pub async fn handle_create_script(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -40,7 +40,7 @@ impl GodotTools {
     }
 
     /// attach_script - スクリプトアタッチ
-    pub(super) async fn handle_attach_script(
+    pub async fn handle_attach_script(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -80,7 +80,7 @@ impl GodotTools {
     }
 
     /// read_script - スクリプト読み取り・パース
-    pub(super) async fn handle_read_script(
+    pub async fn handle_read_script(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -127,7 +127,7 @@ impl GodotTools {
     }
 
     /// add_function - 関数追加
-    pub(super) async fn handle_add_function(
+    pub async fn handle_add_function(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -172,7 +172,7 @@ impl GodotTools {
     }
 
     /// add_export_var - エクスポート変数追加
-    pub(super) async fn handle_add_export_var(
+    pub async fn handle_add_export_var(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
@@ -205,7 +205,7 @@ impl GodotTools {
     }
 
     /// analyze_script - スクリプト分析
-    pub(super) async fn handle_analyze_script(
+    pub async fn handle_analyze_script(
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {

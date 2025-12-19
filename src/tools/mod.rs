@@ -338,6 +338,14 @@ impl GodotTools {
         }
     }
 
+    /// Create with a specific project root
+    pub fn with_project(project_root: std::path::PathBuf) -> Self {
+        Self {
+            project_root: Some(project_root),
+            godot_path: None,
+        }
+    }
+
     pub(crate) fn get_base_path(&self) -> &Path {
         self.project_root
             .as_ref()
