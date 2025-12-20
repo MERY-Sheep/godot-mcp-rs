@@ -1,6 +1,7 @@
 //! MCP Tool Definitions - Godot MCP Server
 
 mod editor;
+mod live;
 mod project;
 mod resource;
 mod scene;
@@ -405,6 +406,268 @@ pub struct LaunchEditorRequest {
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
 pub struct GetRunningStatusRequest {}
 
+// --- Live Commands ---
+
+/// Base for live commands
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
+pub struct LivePingRequest {
+    /// Port of the Godot plugin (default 6060)
+    pub port: Option<u16>,
+}
+
+/// Request to add a node via live editor
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveAddNodeRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Parent node path ("." for root)
+    pub parent: String,
+    /// New node name
+    pub name: String,
+    /// Node type
+    pub node_type: String,
+}
+
+/// Request to remove a node via live editor
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveRemoveNodeRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Path of the node to remove
+    pub node_path: String,
+}
+
+/// Request to set a property via live editor
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveSetPropertyRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Node path
+    pub node_path: String,
+    /// Property name
+    pub property: String,
+    /// Property value (GDScript literal string or JSON)
+    pub value: String,
+}
+
+/// Request to get the live tree structure
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
+pub struct LiveGetTreeRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+}
+
+/// Request to save the current scene in editor
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
+pub struct LiveSaveSceneRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+}
+
+/// Request to open a scene in editor
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveOpenSceneRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Scene path (res://...)
+    pub scene_path: String,
+}
+
+/// Request to connect a signal
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveConnectSignalRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Source node path
+    pub source: String,
+    /// Signal name
+    pub signal: String,
+    /// Target node path
+    pub target: String,
+    /// Target method name
+    pub method: String,
+}
+
+/// Request to disconnect a signal
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveDisconnectSignalRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Source node path
+    pub source: String,
+    /// Signal name
+    pub signal: String,
+    /// Target node path
+    pub target: String,
+    /// Target method name
+    pub method: String,
+}
+
+/// Request to list signals
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveListSignalsRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Node path
+    pub node_path: String,
+}
+
+/// Request to create an animation
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveCreateAnimationRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// AnimationPlayer node path
+    pub player: String,
+    /// Animation name
+    pub name: String,
+    /// Animation length in seconds
+    pub length: f32,
+}
+
+/// Request to add an animation track
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveAddAnimationTrackRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// AnimationPlayer node path
+    pub player: String,
+    /// Animation name
+    pub animation: String,
+    /// Track path (e.g. "NodePath:property")
+    pub track_path: String,
+    /// Track type (default "value")
+    pub track_type: Option<String>,
+}
+
+/// Request to add an animation keyframe
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveAddAnimationKeyRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// AnimationPlayer node path
+    pub player: String,
+    /// Animation name
+    pub animation: String,
+    /// Track index
+    pub track: u32,
+    /// Time in seconds
+    pub time: f32,
+    /// Keyframe value
+    pub value: String,
+}
+
+/// Request to play an animation
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LivePlayAnimationRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// AnimationPlayer node path
+    pub player: String,
+    /// Animation name
+    pub animation: String,
+}
+
+/// Request to stop an animation
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveStopAnimationRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// AnimationPlayer node path
+    pub player: String,
+}
+
+/// Request to list animations
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveListAnimationsRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// AnimationPlayer node path
+    pub player: String,
+}
+
+/// Request to get the editor log
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
+pub struct LiveGetEditorLogRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Number of lines to retrieve
+    pub lines: Option<u32>,
+}
+
+/// Request to clear the editor log
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
+pub struct LiveClearEditorLogRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+}
+
+/// Request to reload the plugin
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Default)]
+pub struct LiveReloadPluginRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+}
+
+/// Request to add a node to a group
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveAddToGroupRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Node path
+    pub node_path: String,
+    /// Group name
+    pub group: String,
+}
+
+/// Request to remove a node from a group
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveRemoveFromGroupRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Node path
+    pub node_path: String,
+    /// Group name
+    pub group: String,
+}
+
+/// Request to list groups of a node
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveListGroupsRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Node path
+    pub node_path: String,
+}
+
+/// Request to get nodes in a group
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveGetGroupNodesRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Group name
+    pub group: String,
+}
+
+/// Request to instantiate a scene via live editor
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LiveInstantiateSceneRequest {
+    /// Port (default 6060)
+    pub port: Option<u16>,
+    /// Scene path (res://...)
+    pub scene_path: String,
+    /// Parent node path ("." for root)
+    pub parent: String,
+    /// New node name (optional)
+    pub name: Option<String>,
+    /// X position (optional)
+    pub x: Option<f32>,
+    /// Y position (optional)
+    pub y: Option<f32>,
+    /// Z position (optional)
+    pub z: Option<f32>,
+}
+
 // ============================================================
 // GodotTools
 // ============================================================
@@ -671,6 +934,127 @@ impl ServerHandler for GodotTools {
                     "Check if a Godot project is currently running",
                     schema_to_json_object::<GetRunningStatusRequest>(),
                 ),
+                // --- Live Tools ---
+                Tool::new(
+                    "live_ping",
+                    "Check connection to the Godot plugin",
+                    schema_to_json_object::<LivePingRequest>(),
+                ),
+                Tool::new(
+                    "live_add_node",
+                    "Add a node via the Godot plugin (real-time, Undo-enabled)",
+                    schema_to_json_object::<LiveAddNodeRequest>(),
+                ),
+                Tool::new(
+                    "live_remove_node",
+                    "Remove a node via the Godot plugin",
+                    schema_to_json_object::<LiveRemoveNodeRequest>(),
+                ),
+                Tool::new(
+                    "live_set_property",
+                    "Set a node property via the Godot plugin (real-time)",
+                    schema_to_json_object::<LiveSetPropertyRequest>(),
+                ),
+                Tool::new(
+                    "live_get_tree",
+                    "Get the current node tree via the Godot plugin",
+                    schema_to_json_object::<LiveGetTreeRequest>(),
+                ),
+                Tool::new(
+                    "live_save_scene",
+                    "Save the current scene via the Godot plugin",
+                    schema_to_json_object::<LiveSaveSceneRequest>(),
+                ),
+                Tool::new(
+                    "live_open_scene",
+                    "Open a scene in the Godot editor via the Godot plugin",
+                    schema_to_json_object::<LiveOpenSceneRequest>(),
+                ),
+                Tool::new(
+                    "live_connect_signal",
+                    "Connect a signal between nodes via the Godot plugin",
+                    schema_to_json_object::<LiveConnectSignalRequest>(),
+                ),
+                Tool::new(
+                    "live_disconnect_signal",
+                    "Disconnect a signal between nodes via the Godot plugin",
+                    schema_to_json_object::<LiveDisconnectSignalRequest>(),
+                ),
+                Tool::new(
+                    "live_list_signals",
+                    "List signals of a node via the Godot plugin",
+                    schema_to_json_object::<LiveListSignalsRequest>(),
+                ),
+                Tool::new(
+                    "live_create_animation",
+                    "Create a new animation via the Godot plugin",
+                    schema_to_json_object::<LiveCreateAnimationRequest>(),
+                ),
+                Tool::new(
+                    "live_add_animation_track",
+                    "Add a track to an animation via the Godot plugin",
+                    schema_to_json_object::<LiveAddAnimationTrackRequest>(),
+                ),
+                Tool::new(
+                    "live_add_animation_key",
+                    "Add a keyframe to an animation track via the Godot plugin",
+                    schema_to_json_object::<LiveAddAnimationKeyRequest>(),
+                ),
+                Tool::new(
+                    "live_play_animation",
+                    "Play an animation via the Godot plugin",
+                    schema_to_json_object::<LivePlayAnimationRequest>(),
+                ),
+                Tool::new(
+                    "live_stop_animation",
+                    "Stop an animation via the Godot plugin",
+                    schema_to_json_object::<LiveStopAnimationRequest>(),
+                ),
+                Tool::new(
+                    "live_list_animations",
+                    "List all animations via the Godot plugin",
+                    schema_to_json_object::<LiveListAnimationsRequest>(),
+                ),
+                Tool::new(
+                    "live_get_editor_log",
+                    "Get editor debug log via the Godot plugin",
+                    schema_to_json_object::<LiveGetEditorLogRequest>(),
+                ),
+                Tool::new(
+                    "live_clear_editor_log",
+                    "Clear editor debug log via the Godot plugin",
+                    schema_to_json_object::<LiveClearEditorLogRequest>(),
+                ),
+                Tool::new(
+                    "live_reload_plugin",
+                    "Reload the Godot MCP plugin",
+                    schema_to_json_object::<LiveReloadPluginRequest>(),
+                ),
+                Tool::new(
+                    "live_add_to_group",
+                    "Add a node to a group via the Godot plugin",
+                    schema_to_json_object::<LiveAddToGroupRequest>(),
+                ),
+                Tool::new(
+                    "live_remove_from_group",
+                    "Remove a node from a group via the Godot plugin",
+                    schema_to_json_object::<LiveRemoveFromGroupRequest>(),
+                ),
+                Tool::new(
+                    "live_list_groups",
+                    "List groups of a node via the Godot plugin",
+                    schema_to_json_object::<LiveListGroupsRequest>(),
+                ),
+                Tool::new(
+                    "live_get_group_nodes",
+                    "Get all nodes in a group via the Godot plugin",
+                    schema_to_json_object::<LiveGetGroupNodesRequest>(),
+                ),
+                Tool::new(
+                    "live_instantiate_scene",
+                    "Instantiate a scene via the Godot plugin",
+                    schema_to_json_object::<LiveInstantiateSceneRequest>(),
+                ),
             ];
 
             Ok(ListToolsResult {
@@ -742,6 +1126,46 @@ impl ServerHandler for GodotTools {
                 "get_debug_output" => self.handle_get_debug_output(request.arguments).await,
                 "launch_editor" => self.handle_launch_editor(request.arguments).await,
                 "get_running_status" => self.handle_get_running_status(request.arguments).await,
+                // --- Live Tools ---
+                "live_ping" => self.handle_live_ping(request.arguments).await,
+                "live_add_node" => self.handle_live_add_node(request.arguments).await,
+                "live_remove_node" => self.handle_live_remove_node(request.arguments).await,
+                "live_set_property" => self.handle_live_set_property(request.arguments).await,
+                "live_get_tree" => self.handle_live_get_tree(request.arguments).await,
+                "live_save_scene" => self.handle_live_save_scene(request.arguments).await,
+                "live_open_scene" => self.handle_live_open_scene(request.arguments).await,
+                "live_connect_signal" => self.handle_live_connect_signal(request.arguments).await,
+                "live_disconnect_signal" => {
+                    self.handle_live_disconnect_signal(request.arguments).await
+                }
+                "live_list_signals" => self.handle_live_list_signals(request.arguments).await,
+                "live_create_animation" => {
+                    self.handle_live_create_animation(request.arguments).await
+                }
+                "live_add_animation_track" => {
+                    self.handle_live_add_animation_track(request.arguments)
+                        .await
+                }
+                "live_add_animation_key" => {
+                    self.handle_live_add_animation_key(request.arguments).await
+                }
+                "live_play_animation" => self.handle_live_play_animation(request.arguments).await,
+                "live_stop_animation" => self.handle_live_stop_animation(request.arguments).await,
+                "live_list_animations" => self.handle_live_list_animations(request.arguments).await,
+                "live_get_editor_log" => self.handle_live_get_editor_log(request.arguments).await,
+                "live_clear_editor_log" => {
+                    self.handle_live_clear_editor_log(request.arguments).await
+                }
+                "live_reload_plugin" => self.handle_live_reload_plugin(request.arguments).await,
+                "live_add_to_group" => self.handle_live_add_to_group(request.arguments).await,
+                "live_remove_from_group" => {
+                    self.handle_live_remove_from_group(request.arguments).await
+                }
+                "live_list_groups" => self.handle_live_list_groups(request.arguments).await,
+                "live_get_group_nodes" => self.handle_live_get_group_nodes(request.arguments).await,
+                "live_instantiate_scene" => {
+                    self.handle_live_instantiate_scene(request.arguments).await
+                }
                 _ => Err(McpError::invalid_request(
                     format!("Unknown tool: {}", request.name),
                     None,

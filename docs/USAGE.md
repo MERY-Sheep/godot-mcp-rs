@@ -10,30 +10,30 @@ Godot エディター内で動作するプラグインと連携し、実行中�
 
 | カテゴリ           | ツール                     | 説明                                   |
 | :----------------- | :------------------------- | :------------------------------------- |
-| **基本**           | `live-ping`                | プラグインとの接続確認                 |
-| **ノード**         | `live-add-node`            | ノードをエディターに追加               |
-|                    | `live-remove-node`         | ノードをエディターから削除             |
-|                    | `live-rename-node`         | ノード名を変更                         |
-|                    | `live-duplicate-node`      | ノードを複製                           |
-|                    | `live-reparent-node`       | ノードの親を変更                       |
-|                    | `live-instantiate-scene`   | シーンをインスタンスとして追加         |
-| **プロパティ**     | `live-get-properties`      | ノードの全プロパティを取得             |
-|                    | `live-set-property`        | ノードのプロパティをリアルタイム変更   |
-| **シーン**         | `live-get-tree`            | 現在のエディター上のノードツリーを取得 |
-|                    | `live-save-scene`          | 編集中のシーンを保存                   |
-|                    | `live-open-scene`          | 指定したシーンをエディターで開く ✨    |
-| **シグナル**       | `live-connect-signal`      | シグナルを接続                         |
-|                    | `live-disconnect-signal`   | シグナルを切断                         |
-|                    | `live-list-signals`        | ノードのシグナルと接続一覧を取得       |
-| **アニメーション** | `live-create-animation`    | 新規アニメーションの作成               |
-|                    | `live-add-animation-track` | アニメーションにトラックを追加         |
-|                    | `live-add-animation-key`   | トラックにキーフレームを追加           |
-|                    | `live-play-animation`      | アニメーションを再生                   |
-|                    | `live-stop-animation`      | アニメーションを停止                   |
-|                    | `live-list-animations`     | アニメーションリストの取得             |
-| **デバッグ**       | `live-get-editor-log`      | エディターのログを取得（制限あり）     |
-|                    | `live-clear-editor-log`    | エディターのログをクリア               |
-| **プラグイン**     | `live-reload-plugin`       | プラグインを再読み込み ✨              |
+| **基本**           | `live_ping`                | プラグインとの接続確認                 |
+| **ノード**         | `live_add_node`            | ノードをエディターに追加               |
+|                    | `live_remove_node`         | ノードをエディターから削除             |
+|                    | `live_instantiate_scene`   | シーンをインスタンスとして追加         |
+| **プロパティ**     | `live_set_property`        | ノードのプロパティをリアルタイム変更   |
+| **シーン**         | `live_get_tree`            | 現在のエディター上のノードツリーを取得 |
+|                    | `live_save_scene`          | 編集中のシーンを保存                   |
+|                    | `live_open_scene`          | 指定したシーンをエディターで開く ✨    |
+| **シグナル**       | `live_connect_signal`      | シグナルを接続                         |
+|                    | `live_disconnect_signal`   | シグナルを切断                         |
+|                    | `live_list_signals`        | ノードのシグナルと接続一覧を取得       |
+| **アニメーション** | `live_create_animation`    | 新規アニメーションの作成               |
+|                    | `live_add_animation_track` | アニメーションにトラックを追加         |
+|                    | `live_add_animation_key`   | トラックにキーフレームを追加           |
+|                    | `live_play_animation`      | アニメーションを再生                   |
+|                    | `live_stop_animation`      | アニメーションを停止                   |
+|                    | `live_list_animations`     | アニメーションリストの取得             |
+| **グループ**       | `live_add_to_group`        | ノードをグループに追加                 |
+|                    | `live_remove_from_group`   | ノードをグループから削除               |
+|                    | `live_list_groups`         | ノードの所属グループ一覧を取得         |
+|                    | `live_get_group_nodes`     | グループ全ノードを取得                 |
+| **デバッグ**       | `live_get_editor_log`      | エディターのログを取得                 |
+|                    | `live_clear_editor_log`    | エディターのログをクリア               |
+| **プラグイン**     | `live_reload_plugin`       | プラグインを再読み込み ✨              |
 
 ---
 

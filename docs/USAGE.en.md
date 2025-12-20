@@ -8,30 +8,30 @@ Works with the plugin running inside the Godot Editor to perform direct operatio
 
 | Category       | Tool                       | Description                                |
 | :------------- | :------------------------- | :----------------------------------------- |
-| **Basic**      | `live-ping`                | Connection check with the plugin           |
-| **Node**       | `live-add-node`            | Add a node to the editor                   |
-|                | `live-remove-node`         | Remove a node from the editor              |
-|                | `live-rename-node`         | Rename a node                              |
-|                | `live-duplicate-node`      | Duplicate a node                           |
-|                | `live-reparent-node`       | Change a node's parent                     |
-|                | `live-instantiate-scene`   | Add a scene as an instance                 |
-| **Properties** | `live-get-properties`      | Get all properties of a node               |
-|                | `live-set-property`        | Change node properties in real-time        |
-| **Scene**      | `live-get-tree`            | Get the node tree in the current editor    |
-|                | `live-save-scene`          | Save the scene currently being edited      |
-|                | `live-open-scene`          | Open a specified scene in the editor ✨    |
-| **Signals**    | `live-connect-signal`      | Connect a signal                           |
-|                | `live-disconnect-signal`   | Disconnect a signal                        |
-|                | `live-list-signals`        | Get a list of node signals and connections |
-| **Animation**  | `live-create-animation`    | Create a new animation                     |
-|                | `live-add-animation-track` | Add a track to an animation                |
-|                | `live-add-animation-key`   | Add a keyframe to a track                  |
-|                | `live-play-animation`      | Play an animation                          |
-|                | `live-stop-animation`      | Stop an animation                          |
-|                | `live-list-animations`     | Get a list of animations                   |
-| **Debug**      | `live-get-editor-log`      | Get editor logs (limited in Godot 4.x)     |
-|                | `live-clear-editor-log`    | Clear editor logs                          |
-| **Plugin**     | `live-reload-plugin`       | Reload the plugin ✨                       |
+| **Basic**      | `live_ping`                | Connection check with the plugin           |
+| **Node**       | `live_add_node`            | Add a node to the editor                   |
+|                | `live_remove_node`         | Remove a node from the editor              |
+|                | `live_instantiate_scene`   | Add a scene as an instance                 |
+| **Properties** | `live_set_property`        | Change node properties in real-time        |
+| **Scene**      | `live_get_tree`            | Get the node tree in the current editor    |
+|                | `live_save_scene`          | Save the scene currently being edited      |
+|                | `live_open_scene`          | Open a specified scene in the editor ✨    |
+| **Signals**    | `live_connect_signal`      | Connect a signal                           |
+|                | `live_disconnect_signal`   | Disconnect a signal                        |
+|                | `live_list_signals`        | Get a list of node signals and connections |
+| **Animation**  | `live_create_animation`    | Create a new animation                     |
+|                | `live_add_animation_track` | Add a track to an animation                |
+|                | `live_add_animation_key`   | Add a keyframe to a track                  |
+|                | `live_play_animation`      | Play an animation                          |
+|                | `live_stop_animation`      | Stop an animation                          |
+|                | `live_list_animations`     | Get a list of animations                   |
+| **Groups**     | `live_add_to_group`        | Add a node to a group                      |
+|                | `live_remove_from_group`   | Remove a node from a group                 |
+|                | `live_list_groups`         | Get a list of node groups                  |
+|                | `live_get_group_nodes`     | Get all nodes in a group                   |
+| **Debug**      | `live_get_editor_log`      | Get editor logs                            |
+|                | `live_clear_editor_log`    | Clear editor logs                          |
+| **Plugin**     | `live_reload_plugin`       | Reload the plugin ✨                       |
 
 ---
 

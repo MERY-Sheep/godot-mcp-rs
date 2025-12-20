@@ -56,16 +56,16 @@ flowchart TB
     EditorCore <--> FS
 ```
 
-## Tool Categories (56 tools total)
+## Tool Categories (58 tools total)
 
-| Category             | Tools | Key Features                                                |
-| :------------------- | :---: | :---------------------------------------------------------- |
-| **Live (Real-time)** |  22   | Editor operations (add, remove, rename, anim, signal, etc.) |
-| **Editor/Run**       |   6   | Run project, stop, get logs, check version                  |
-| **Project**          |   7   | File exploration, search, stats, validation, node info      |
-| **Scene**            |  13   | File-based create, read, edit, compare, templates           |
-| **Script**           |   6   | File-based create, parse, add function/variable             |
-| **Resource**         |   2   | Resource list, parsing                                      |
+| Category             | Tools | Key Features                                               |
+| :------------------- | :---: | :--------------------------------------------------------- |
+| **Live (Real-time)** |  24   | Editor operations (add, remove, group, anim, signal, etc.) |
+| **Editor/Run**       |   6   | Run project, stop, get logs, check version                 |
+| **Project**          |   7   | File exploration, search, stats, validation, node info     |
+| **Scene**            |  13   | File-based create, read, edit, compare, templates          |
+| **Script**           |   6   | File-based create, parse, add function/variable            |
+| **Resource**         |   2   | Resource list, parsing                                     |
 
 ## Major Components
 
