@@ -129,7 +129,8 @@ impl GodotTools {
         let project_root = self.get_base_path();
         let pid_file = get_pid_file_path(project_root);
 
-        // Check if already running
+        // If already running, stop it first (auto-restart behavior)
+        let mut stopped_previous = false;
         if pid_file.exists() {
             if let Ok(pid_str) = fs::read_to_string(&pid_file) {
                 if let Ok(pid) = pid_str.trim().parse::<u32>() {
@@ -142,13 +143,18 @@ impl GodotTools {
                         if let Ok(out) = check {
                             let output_str = String::from_utf8_lossy(&out.stdout);
                             if output_str.contains(&pid.to_string()) {
-                                return Err(McpError::internal_error(
-                                    format!("Project is already running (PID: {})", pid),
-                                    None,
-                                ));
+                                // Stop the running project automatically
+                                let _ = Command::new("taskkill")
+                                    .args(["/PID", &pid.to_string(), "/F"])
+                                    .output();
+                                stopped_previous = true;
+                                // Brief wait for process to terminate
+                                std::thread::sleep(std::time::Duration::from_millis(500));
                             }
                         }
                     }
+                    // Clean up PID file
+                    fs::remove_file(&pid_file).ok();
                 }
             }
         }
@@ -206,10 +212,17 @@ impl GodotTools {
             }
         });
 
+        let message = if stopped_previous {
+            format!("Stopped previous instance and started project{}", req.scene.as_ref().map(|s| format!(" with scene: {}", s)).unwrap_or_default())
+        } else {
+            format!("Project started{}", req.scene.as_ref().map(|s| format!(" with scene: {}", s)).unwrap_or_default())
+        };
+
         let result = serde_json::json!({
             "success": true,
             "pid": pid,
-            "message": format!("Project started{}", req.scene.map(|s| format!(" with scene: {}", s)).unwrap_or_default()),
+            "restarted": stopped_previous,
+            "message": message,
         });
 
         Ok(CallToolResult::success(vec![Content::text(
