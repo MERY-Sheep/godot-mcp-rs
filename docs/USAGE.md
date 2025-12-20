@@ -21,6 +21,7 @@ Godot エディター内で動作するプラグインと連携し、実行中�
 |                    | `live-set-property`        | ノードのプロパティをリアルタイム変更   |
 | **シーン**         | `live-get-tree`            | 現在のエディター上のノードツリーを取得 |
 |                    | `live-save-scene`          | 編集中のシーンを保存                   |
+|                    | `live-open-scene`          | 指定したシーンをエディターで開く ✨    |
 | **シグナル**       | `live-connect-signal`      | シグナルを接続                         |
 |                    | `live-disconnect-signal`   | シグナルを切断                         |
 |                    | `live-list-signals`        | ノードのシグナルと接続一覧を取得       |
@@ -30,8 +31,9 @@ Godot エディター内で動作するプラグインと連携し、実行中�
 |                    | `live-play-animation`      | アニメーションを再生                   |
 |                    | `live-stop-animation`      | アニメーションを停止                   |
 |                    | `live-list-animations`     | アニメーションリストの取得             |
-| **デバッグ**       | `live-get-editor-log`      | エディターのログを取得                 |
+| **デバッグ**       | `live-get-editor-log`      | エディターのログを取得（制限あり）     |
 |                    | `live-clear-editor-log`    | エディターのログをクリア               |
+| **プラグイン**     | `live-reload-plugin`       | プラグインを再読み込み ✨              |
 
 ---
 
@@ -45,6 +47,7 @@ Godot エディター内で動作するプラグインと連携し、実行中�
 | `get_debug_output`   | 実行中または終了後のコンソール出力を取得                 |
 | `launch_editor`      | Godot エディターを起動してプロジェクトを開く             |
 | `get_running_status` | プロジェクトが現在実行中かどうかを確認                   |
+| `read-godot-log`     | プロジェクトの Godot ログファイルを読み取り ✨           |
 
 ---
 

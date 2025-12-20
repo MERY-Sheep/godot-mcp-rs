@@ -78,6 +78,14 @@ pub enum ToolCommands {
         project: PathBuf,
     },
 
+    /// Read Godot's log file for a project
+    ReadGodotLog {
+        #[arg(short, long)]
+        project: PathBuf,
+        #[arg(long, default_value = "50")]
+        lines: usize,
+    },
+
     // === Scene Tools ===
     /// Create a new scene
     CreateScene {
@@ -570,6 +578,61 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         ToolCommands::ValidateProject { project } => {
             let tools = GodotTools::with_project(project);
             tools.handle_validate_project(None).await
+        }
+        ToolCommands::ReadGodotLog { project, lines } => {
+            // Get project name from project.godot
+            let project_godot = project.join("project.godot");
+            let project_name = if project_godot.exists() {
+                let content = std::fs::read_to_string(&project_godot).unwrap_or_default();
+                content
+                    .lines()
+                    .find(|line| line.starts_with("config/name="))
+                    .map(|line| {
+                        line.trim_start_matches("config/name=")
+                            .trim_matches('"')
+                            .to_string()
+                    })
+                    .unwrap_or_else(|| project.file_name().unwrap().to_string_lossy().to_string())
+            } else {
+                project.file_name().unwrap().to_string_lossy().to_string()
+            };
+
+            // Build log file path
+            let appdata = std::env::var("APPDATA").unwrap_or_default();
+            let log_path = std::path::PathBuf::from(&appdata)
+                .join("Godot")
+                .join("app_userdata")
+                .join(&project_name)
+                .join("logs")
+                .join("godot.log");
+
+            let result = if log_path.exists() {
+                let content = std::fs::read_to_string(&log_path).unwrap_or_default();
+                let log_lines: Vec<&str> = content.lines().collect();
+                let start = if log_lines.len() > lines {
+                    log_lines.len() - lines
+                } else {
+                    0
+                };
+                let recent_lines: Vec<String> =
+                    log_lines[start..].iter().map(|s| s.to_string()).collect();
+                serde_json::json!({
+                    "success": true,
+                    "project": project_name,
+                    "log_path": log_path.to_string_lossy(),
+                    "total_lines": log_lines.len(),
+                    "lines": recent_lines
+                })
+            } else {
+                serde_json::json!({
+                    "error": "Log file not found",
+                    "expected_path": log_path.to_string_lossy(),
+                    "project_name": project_name
+                })
+            };
+
+            println!("{}", serde_json::to_string_pretty(&result).unwrap());
+            return Ok(());
         }
 
         // === Scene Tools ===

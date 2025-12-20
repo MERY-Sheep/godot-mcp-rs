@@ -1,0 +1,9 @@
+# Increase stack size for Windows debug builds
+# The large number of CLI subcommands (50+) causes stack overflow in debug mode
+# due to unoptimized clap derive code
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-args=/STACK:8388608"]
+
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "link-args=-Wl,--stack,8388608"]

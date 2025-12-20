@@ -19,6 +19,7 @@ Works with the plugin running inside the Godot Editor to perform direct operatio
 |                | `live-set-property`        | Change node properties in real-time        |
 | **Scene**      | `live-get-tree`            | Get the node tree in the current editor    |
 |                | `live-save-scene`          | Save the scene currently being edited      |
+|                | `live-open-scene`          | Open a specified scene in the editor ✨    |
 | **Signals**    | `live-connect-signal`      | Connect a signal                           |
 |                | `live-disconnect-signal`   | Disconnect a signal                        |
 |                | `live-list-signals`        | Get a list of node signals and connections |
@@ -28,8 +29,9 @@ Works with the plugin running inside the Godot Editor to perform direct operatio
 |                | `live-play-animation`      | Play an animation                          |
 |                | `live-stop-animation`      | Stop an animation                          |
 |                | `live-list-animations`     | Get a list of animations                   |
-| **Debug**      | `live-get-editor-log`      | Get editor logs                            |
+| **Debug**      | `live-get-editor-log`      | Get editor logs (limited in Godot 4.x)     |
 |                | `live-clear-editor-log`    | Clear editor logs                          |
+| **Plugin**     | `live-reload-plugin`       | Reload the plugin ✨                       |
 
 ---
 
@@ -43,6 +45,7 @@ Works with the plugin running inside the Godot Editor to perform direct operatio
 | `get_debug_output`   | Get console output during or after execution          |
 | `launch_editor`      | Launch Godot Editor and open the project              |
 | `get_running_status` | Check if the project is currently running             |
+| `read-godot-log`     | Read the project's Godot log file ✨                  |
 
 ---
 
