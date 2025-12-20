@@ -1,6 +1,11 @@
 //! CLI Mode - Direct operation from terminal or scripts.
 
-use crate::godot::commands::*;
+use crate::godot::commands::{
+    AddAnimationKeyParams, AddAnimationTrackParams, AddNodeParams, CreateAnimationParams,
+    GetLogParams, GodotCommand, GroupNameParams, GroupParams, InstantiateSceneParams,
+    NodePathParams, OpenSceneParams, PlayAnimationParams, Position3D, RemoveNodeParams,
+    SetPropertyParams, SignalParams, StopAnimationParams,
+};
 use crate::tools::GodotTools;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -277,6 +282,68 @@ pub enum ToolCommands {
         path: String,
     },
 
+    /// Create a new resource file
+    CreateResource {
+        #[arg(short, long)]
+        project: PathBuf,
+        #[arg(long)]
+        path: String,
+        #[arg(long, name = "type")]
+        resource_type: String,
+    },
+
+    /// Set a property on a resource file
+    SetResourceProperty {
+        #[arg(short, long)]
+        project: PathBuf,
+        #[arg(long)]
+        path: String,
+        #[arg(long)]
+        property: String,
+        #[arg(long)]
+        value: String,
+    },
+
+    /// Create a new StandardMaterial3D
+    CreateMaterial {
+        #[arg(short, long)]
+        project: PathBuf,
+        #[arg(long)]
+        path: String,
+        #[arg(long)]
+        name: Option<String>,
+        #[arg(long)]
+        metallic: Option<f32>,
+        #[arg(long)]
+        roughness: Option<f32>,
+    },
+
+    /// Set a property on a material
+    SetMaterialProperty {
+        #[arg(short, long)]
+        project: PathBuf,
+        #[arg(long)]
+        path: String,
+        #[arg(long)]
+        property: String,
+        #[arg(long)]
+        value: String,
+    },
+
+    /// Assign a material to a node in a scene
+    AssignMaterial {
+        #[arg(short, long)]
+        project: PathBuf,
+        #[arg(long)]
+        scene: String,
+        #[arg(long)]
+        node_path: String,
+        #[arg(long)]
+        material: String,
+        #[arg(long)]
+        surface_index: Option<u32>,
+    },
+
     // === Editor Tools ===
     /// Get Godot version
     GetGodotVersion {
@@ -522,6 +589,43 @@ pub enum ToolCommands {
     LiveReloadPlugin {
         #[arg(long, default_value = "6060")]
         port: u16,
+    },
+
+    // === Live Group Management Commands ===
+    /// Add a node to a group
+    LiveAddToGroup {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = ".")]
+        node_path: String,
+        #[arg(long)]
+        group: String,
+    },
+
+    /// Remove a node from a group
+    LiveRemoveFromGroup {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = ".")]
+        node_path: String,
+        #[arg(long)]
+        group: String,
+    },
+
+    /// List groups of a node
+    LiveListGroups {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long, default_value = ".")]
+        node_path: String,
+    },
+
+    /// Get all nodes in a group
+    LiveGetGroupNodes {
+        #[arg(long, default_value = "6060")]
+        port: u16,
+        #[arg(long)]
+        group: String,
     },
 }
 
@@ -858,6 +962,99 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
             map.insert("path".to_string(), serde_json::Value::String(path));
             tools.handle_read_resource(Some(map)).await
         }
+        ToolCommands::CreateResource {
+            project,
+            path,
+            resource_type,
+        } => {
+            let tools = GodotTools::with_project(project);
+            let mut map = serde_json::Map::new();
+            map.insert("path".to_string(), serde_json::Value::String(path));
+            map.insert(
+                "resource_type".to_string(),
+                serde_json::Value::String(resource_type),
+            );
+            tools.handle_create_resource(Some(map)).await
+        }
+        ToolCommands::SetResourceProperty {
+            project,
+            path,
+            property,
+            value,
+        } => {
+            let tools = GodotTools::with_project(project);
+            let mut map = serde_json::Map::new();
+            map.insert("path".to_string(), serde_json::Value::String(path));
+            map.insert("property".to_string(), serde_json::Value::String(property));
+            map.insert("value".to_string(), serde_json::Value::String(value));
+            tools.handle_set_resource_property(Some(map)).await
+        }
+        ToolCommands::CreateMaterial {
+            project,
+            path,
+            name,
+            metallic,
+            roughness,
+        } => {
+            let tools = GodotTools::with_project(project);
+            let mut map = serde_json::Map::new();
+            map.insert("path".to_string(), serde_json::Value::String(path));
+            if let Some(n) = name {
+                map.insert("name".to_string(), serde_json::Value::String(n));
+            }
+            if let Some(m) = metallic {
+                map.insert(
+                    "metallic".to_string(),
+                    serde_json::Value::Number(serde_json::Number::from_f64(m as f64).unwrap()),
+                );
+            }
+            if let Some(r) = roughness {
+                map.insert(
+                    "roughness".to_string(),
+                    serde_json::Value::Number(serde_json::Number::from_f64(r as f64).unwrap()),
+                );
+            }
+            tools.handle_create_material(Some(map)).await
+        }
+        ToolCommands::SetMaterialProperty {
+            project,
+            path,
+            property,
+            value,
+        } => {
+            let tools = GodotTools::with_project(project);
+            let mut map = serde_json::Map::new();
+            map.insert("path".to_string(), serde_json::Value::String(path));
+            map.insert("property".to_string(), serde_json::Value::String(property));
+            map.insert("value".to_string(), serde_json::Value::String(value));
+            tools.handle_set_material_property(Some(map)).await
+        }
+        ToolCommands::AssignMaterial {
+            project,
+            scene,
+            node_path,
+            material,
+            surface_index,
+        } => {
+            let tools = GodotTools::with_project(project);
+            let mut map = serde_json::Map::new();
+            map.insert("scene_path".to_string(), serde_json::Value::String(scene));
+            map.insert(
+                "node_path".to_string(),
+                serde_json::Value::String(node_path),
+            );
+            map.insert(
+                "material_path".to_string(),
+                serde_json::Value::String(material),
+            );
+            if let Some(idx) = surface_index {
+                map.insert(
+                    "surface_index".to_string(),
+                    serde_json::Value::Number(idx.into()),
+                );
+            }
+            tools.handle_assign_material(Some(map)).await
+        }
 
         // === Editor Tools ===
         ToolCommands::GetGodotVersion { project } => {
@@ -1125,6 +1322,38 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         }
         ToolCommands::LiveReloadPlugin { port } => {
             return run_live_command(port, GodotCommand::ReloadPlugin).await;
+        }
+
+        // === Live Group Management Commands ===
+        ToolCommands::LiveAddToGroup {
+            port,
+            node_path,
+            group,
+        } => {
+            return run_live_command(
+                port,
+                GodotCommand::AddToGroup(GroupParams { node_path, group }),
+            )
+            .await;
+        }
+        ToolCommands::LiveRemoveFromGroup {
+            port,
+            node_path,
+            group,
+        } => {
+            return run_live_command(
+                port,
+                GodotCommand::RemoveFromGroup(GroupParams { node_path, group }),
+            )
+            .await;
+        }
+        ToolCommands::LiveListGroups { port, node_path } => {
+            return run_live_command(port, GodotCommand::ListGroups(NodePathParams { node_path }))
+                .await;
+        }
+        ToolCommands::LiveGetGroupNodes { port, group } => {
+            return run_live_command(port, GodotCommand::GetGroupNodes(GroupNameParams { group }))
+                .await;
         }
     };
 

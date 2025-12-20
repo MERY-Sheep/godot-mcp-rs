@@ -252,6 +252,100 @@ pub struct ReadResourceRequest {
     pub path: String,
 }
 
+/// Request to create a resource
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct CreateResourceRequest {
+    /// Resource file path (e.g., "resources/my_resource.tres")
+    pub path: String,
+    /// Resource type (e.g., "Resource", "StandardMaterial3D")
+    pub resource_type: String,
+}
+
+/// Request to set a resource property
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct SetResourcePropertyRequest {
+    /// Resource file path
+    pub path: String,
+    /// Property name
+    pub property: String,
+    /// Property value (Godot formatted string, e.g., 'Color(1, 0, 0, 1)', '0.5', '"text"')
+    pub value: String,
+}
+
+/// Request to add an external resource reference
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct AddExtResourceRequest {
+    /// Resource file path
+    pub path: String,
+    /// External resource ID (e.g., "1", "2")
+    pub id: String,
+    /// External resource type (e.g., "Script", "Texture2D")
+    pub resource_type: String,
+    /// Path to the external resource (e.g., "res://scripts/my_script.gd")
+    pub resource_path: String,
+}
+
+/// Request to add a sub-resource
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct AddSubResourceRequest {
+    /// Resource file path
+    pub path: String,
+    /// Sub-resource ID (e.g., "1", "2")
+    pub id: String,
+    /// Sub-resource type (e.g., "StyleBoxFlat", "Gradient")
+    pub resource_type: String,
+    /// Initial properties (optional)
+    pub properties: Option<Vec<ResourcePropertyEntry>>,
+}
+
+/// Resource property entry for batch operations
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct ResourcePropertyEntry {
+    /// Property name
+    pub name: String,
+    /// Property value (Godot formatted string)
+    pub value: String,
+}
+
+/// Request to create a material
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct CreateMaterialRequest {
+    /// Material file path (e.g., "materials/metal.tres")
+    pub path: String,
+    /// Material name (optional)
+    pub name: Option<String>,
+    /// Albedo color as RGBA array [r, g, b, a] (0.0-1.0)
+    pub albedo_color: Option<[f32; 4]>,
+    /// Metallic value (0.0-1.0)
+    pub metallic: Option<f32>,
+    /// Roughness value (0.0-1.0)
+    pub roughness: Option<f32>,
+}
+
+/// Request to set a material property
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct SetMaterialPropertyRequest {
+    /// Material file path
+    pub path: String,
+    /// Property name (e.g., "albedo_color", "metallic", "roughness", "emission")
+    pub property: String,
+    /// Property value (Godot formatted string)
+    pub value: String,
+}
+
+/// Request to assign a material to a node
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct AssignMaterialRequest {
+    /// Scene file path
+    pub scene_path: String,
+    /// Node path (must be a MeshInstance3D or similar)
+    pub node_path: String,
+    /// Material resource path (e.g., "res://materials/metal.tres")
+    pub material_path: String,
+    /// Surface index (default 0)
+    pub surface_index: Option<u32>,
+}
+
 /// Request for node type information
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct GetNodeTypeInfoRequest {
@@ -491,6 +585,42 @@ impl ServerHandler for GodotTools {
                     schema_to_json_object::<ReadResourceRequest>(),
                 ),
                 Tool::new(
+                    "create_resource",
+                    "Create a new .tres resource file",
+                    schema_to_json_object::<CreateResourceRequest>(),
+                ),
+                Tool::new(
+                    "set_resource_property",
+                    "Set a property on a .tres resource file",
+                    schema_to_json_object::<SetResourcePropertyRequest>(),
+                ),
+                Tool::new(
+                    "add_ext_resource",
+                    "Add an external resource reference to a .tres file",
+                    schema_to_json_object::<AddExtResourceRequest>(),
+                ),
+                Tool::new(
+                    "add_sub_resource",
+                    "Add a sub-resource to a .tres file",
+                    schema_to_json_object::<AddSubResourceRequest>(),
+                ),
+                // Material tools
+                Tool::new(
+                    "create_material",
+                    "Create a new StandardMaterial3D resource file",
+                    schema_to_json_object::<CreateMaterialRequest>(),
+                ),
+                Tool::new(
+                    "set_material_property",
+                    "Set a property on a material resource file",
+                    schema_to_json_object::<SetMaterialPropertyRequest>(),
+                ),
+                Tool::new(
+                    "assign_material",
+                    "Assign a material to a MeshInstance3D node in a scene",
+                    schema_to_json_object::<AssignMaterialRequest>(),
+                ),
+                Tool::new(
                     "get_node_type_info",
                     "Get detailed information about a Godot node type (properties, methods, common children)",
                     schema_to_json_object::<GetNodeTypeInfoRequest>(),
@@ -587,6 +717,18 @@ impl ServerHandler for GodotTools {
                 // Resource tools
                 "list_resources" => self.handle_list_resources(request.arguments).await,
                 "read_resource" => self.handle_read_resource(request.arguments).await,
+                "create_resource" => self.handle_create_resource(request.arguments).await,
+                "set_resource_property" => {
+                    self.handle_set_resource_property(request.arguments).await
+                }
+                "add_ext_resource" => self.handle_add_ext_resource(request.arguments).await,
+                "add_sub_resource" => self.handle_add_sub_resource(request.arguments).await,
+                // Material tools
+                "create_material" => self.handle_create_material(request.arguments).await,
+                "set_material_property" => {
+                    self.handle_set_material_property(request.arguments).await
+                }
+                "assign_material" => self.handle_assign_material(request.arguments).await,
                 "create_scene_from_template" => {
                     self.handle_create_scene_from_template(request.arguments)
                         .await

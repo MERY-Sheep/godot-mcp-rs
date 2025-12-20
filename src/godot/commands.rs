@@ -33,6 +33,11 @@ pub enum GodotCommand {
     InstantiateScene(InstantiateSceneParams),
     // Reload
     ReloadPlugin,
+    // Group management
+    AddToGroup(GroupParams),
+    RemoveFromGroup(GroupParams),
+    ListGroups(NodePathParams),
+    GetGroupNodes(GroupNameParams),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -143,4 +148,15 @@ pub struct Position3D {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GroupParams {
+    pub node_path: String,
+    pub group: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GroupNameParams {
+    pub group: String,
 }

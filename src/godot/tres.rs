@@ -37,7 +37,98 @@ pub struct SubResourceDef {
     pub properties: HashMap<String, String>,
 }
 
+impl SubResourceDef {
+    /// Create a new sub-resource
+    pub fn new(id: &str, resource_type: &str) -> Self {
+        SubResourceDef {
+            id: id.to_string(),
+            resource_type: resource_type.to_string(),
+            properties: HashMap::new(),
+        }
+    }
+
+    /// Set a property on this sub-resource
+    pub fn set_property(&mut self, key: &str, value: &str) {
+        self.properties.insert(key.to_string(), value.to_string());
+    }
+}
+
 impl GodotResource {
+    /// Create a new resource with the given type
+    pub fn new(resource_type: &str) -> Self {
+        GodotResource {
+            resource_type: resource_type.to_string(),
+            load_steps: None,
+            format: Some(3),
+            ext_resources: Vec::new(),
+            sub_resources: Vec::new(),
+            properties: HashMap::new(),
+        }
+    }
+
+    /// Set a property on the main resource
+    pub fn set_property(&mut self, key: &str, value: &str) {
+        self.properties.insert(key.to_string(), value.to_string());
+    }
+
+    /// Add an external resource reference
+    pub fn add_ext_resource(&mut self, id: &str, resource_type: &str, path: &str) {
+        self.ext_resources.push(ExtResourceRef {
+            id: id.to_string(),
+            resource_type: resource_type.to_string(),
+            path: path.to_string(),
+        });
+    }
+
+    /// Add a sub-resource and return a mutable reference to it
+    pub fn add_sub_resource(&mut self, id: &str, resource_type: &str) -> &mut SubResourceDef {
+        self.sub_resources.push(SubResourceDef::new(id, resource_type));
+        self.sub_resources.last_mut().unwrap()
+    }
+
+    /// Serialize the resource to .tres format
+    pub fn to_tres(&self) -> String {
+        let mut output = String::new();
+
+        // Calculate load_steps
+        let load_steps = 1 + self.ext_resources.len() + self.sub_resources.len();
+
+        // Header
+        output.push_str(&format!(
+            "[gd_resource type=\"{}\" load_steps={} format={}]\n",
+            self.resource_type,
+            load_steps,
+            self.format.unwrap_or(3)
+        ));
+
+        // External resources
+        for ext in &self.ext_resources {
+            output.push_str(&format!(
+                "\n[ext_resource type=\"{}\" path=\"{}\" id=\"{}\"]\n",
+                ext.resource_type, ext.path, ext.id
+            ));
+        }
+
+        // Sub-resources
+        for sub in &self.sub_resources {
+            output.push_str(&format!(
+                "\n[sub_resource type=\"{}\" id=\"{}\"]\n",
+                sub.resource_type, sub.id
+            ));
+            for (key, value) in &sub.properties {
+                output.push_str(&format!("{} = {}\n", key, value));
+            }
+        }
+
+        // Main resource properties
+        output.push_str("\n[resource]\n");
+        for (key, value) in &self.properties {
+            output.push_str(&format!("{} = {}\n", key, value));
+        }
+
+        output
+    }
+
     /// Parse a .tres file
     pub fn parse(content: &str) -> Result<Self, String> {
         let mut resource = GodotResource {
