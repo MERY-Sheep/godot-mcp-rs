@@ -1,75 +1,125 @@
-## Claude Code / LLM Agent ガイド（GQL 中心）
+# Godot MCP Server (godot-mcp-rs) Guide
 
-このリポジトリは Godot プロジェクトを GraphQL (GQL) 経由で操作するための MCP サーバーです。  
-**迷ったらまずここを読み、指示に従ってください。**
+This project is a Godot 4 Assistant powered by a Rust-based MCP server.
+**It uses GraphQL (GQL) as the primary interface for all operations.**
 
----
+## Core Capabilities
 
-## 開発の要点（Source of Truth）
+- **Project Structure**: Read scenes (.tscn), scripts (.gd), and resources (.tres) via structured queries.
+- **Context Gathering**: Use `gatherContext` to pull related files and dependencies in one shot.
+- **Safe Mutations**: Validate -> Preview -> Apply flow for modifying scenes and files.
+- **Live Integration**: manipulate the running Godot Editor (add nodes, connect signals, etc.).
 
-- **スキーマ (定数)**: [docs/gql/schema.graphql](file:///c:/Work/godot-mcp-rs/docs/gql/schema.graphql)
-  - 全機能の定義、型、エラーコードの唯一の正典です。
-- **設計契約**: [docs/DESIGN_GQL.md](file:///c:/Work/godot-mcp-rs/docs/DESIGN_GQL.md)
-- **移行ガイド**: [docs/gql/MIGRATION_GUIDE.md](file:///c:/Work/godot-mcp-rs/docs/gql/MIGRATION_GUIDE.md)
+## 🛠 Tools (The "Big 3")
 
----
+You only need these three tools. Forget about file system calls for Godot assets.
 
-## MCP ツール（GQL 一本化）
+1.  **`godot_query`**: Read-only operations (Project info, Scene structure, Script analysis).
+2.  **`godot_mutate`**: Write operations (Create/Edit Scene, Add Node, Live commands).
+3.  **`godot_introspect`**: Get the schema or type details (Use this if you are unsure about args).
 
-従来の個別ツール（56 個以上）は廃止され、以下の **3 つの GQL ツール** に集約されました。
+## 💡 Quick Start / Common Patterns
 
-1. `godot_query`: データの読み取り（シーン、スクリプト、プロジェクト統計等）
-2. `godot_mutate`: データの変更（ノード追加、プロパティ設定、ファイル作成等）
-3. `godot_introspect`: スキーマ（SDL）の取得
+### 1. Understand the Project (Context)
 
-LLM は、`godot_introspect` で利用可能なクエリ/ミューテーションを調べ、`godot_query`/`godot_mutate` を実行してください。
+Instead of `ls -R`, use:
 
----
-
-## 基本構造
-
-- `src/graphql/`: GQL エンジン、リゾルバ、型定義。
-- `src/tools/`: MCP ハンドラ、旧ツール群（CLI 互換用）。
-- `src/godot/`: Godot ファイルの静的解析（パーサー）。
-- `addons/`: Godot 側にインストールする MCP 連携プラグイン。
-
----
-
-## 作業ルール
-
-- **TDD (最重要)**: 変更時は必ず `tests/` 内にテストを追加/更新してください。
-- **後方互換性**: MCP ツール定義からは削除されましたが、旧ツールは CLI モード (`godot-mcp-rs.exe call-tool ...`) 用に実装を保持しています。
-- **禁止事項**:
-  - `schema.graphql` に無い機能を勝手に追加しない。
-  - `args: JSON!` を個別の型にバラさない。
-
----
-
-## 開発コマンド
-
-```bash
-cargo build          # ビルド
-cargo test           # テスト実行（TDD 必須）
-cargo clippy         # リント（警告ゼロを目指す）
-cargo run -- call-tool <NAME> <JSON_ARGS>  # 特定ツールの直接デバッグ
+```graphql
+query {
+  project {
+    name
+    path
+    stats {
+      sceneCount
+      scriptCount
+    }
+  }
+}
 ```
 
-## 環境
+To read a specific file and its dependencies (The **BEST** way to start a task):
 
-- **Rust**: Edition 2021
-- **主要クレート**: `rmcp`（MCP）, `tokio`（非同期）, `nom`（パーサー）, `reqwest`（HTTP）
+```graphql
+query {
+  gatherContext(input: { entryPoint: "res://scenes/main.tscn", depth: 1 }) {
+    main {
+      path
+      script {
+        path
+      }
+    }
+    dependencies {
+      path
+      type
+    }
+    summary {
+      totalFiles
+    }
+  }
+}
+```
 
-## コンテキスト管理
+### 2. Read a Scene or Script
 
-### 長い作業の分割
+```graphql
+query {
+  scene(path: "res://player.tscn") {
+    root {
+      name
+      type
+      children {
+        name
+        type
+      }
+    }
+  }
+  script(path: "res://player.gd") {
+    className
+    functions {
+      name
+      arguments
+    }
+  }
+}
+```
 
-- 1 つの Phase 完了ごとに会話を分割することを推奨
-- 完了時は必ずドキュメントを更新してから終了
+### 3. Make Changes (The Safe Way)
 
-### 引き継ぎ情報の提示
+For complex changes, use the Transaction Flow: `validateMutation` -> `previewMutation` -> `applyMutation`.
 
-タスク完了時、以下を明示的に伝える:
+**Example: Add a Timer node**
 
-1. 何が完了したか
-2. 次に何をすべきか
-3. 参照すべきファイル
+```graphql
+mutation {
+  applyMutation(input: {
+    operations: [
+      {
+        type: ADD_NODE,
+        args: {
+            "parent": ".",
+            "name": "AttackTimer",
+            "type": "Timer"
+        }
+      }
+    ]
+  }) {
+    success
+    appliedCount
+  }
+}
+```
+
+## ⚠️ Important Rules
+
+1.  **Single Source of Truth**: The schema is at `docs/gql/schema.graphql`. If you HALLUCINATE a field, the query will fail. Check schema if stuck.
+2.  **Live vs File**:
+    - `currentScene`, `node(path: ...)` are **Live** (Editor must be open).
+    - `scene(path: ...)` is **File-based** (Static analysis, works anytime).
+3.  **Arguments**: Most mutations take a `JSON` blob for `args`. This is flexible but requires you to match the expected keys (see `docs/DESIGN_GQL.md` or schema comments).
+4.  **Do not write .tscn files manually**: Use `godot_mutate`. The server handles UID generation and format correctness.
+
+## Development
+
+- **Build**: `cargo build`
+- **Test**: `cargo test`
+- **Schema**: `docs/gql/schema.graphql` (Update this if you change `src/graphql/schema.rs`)
