@@ -4,6 +4,7 @@
 //! Keep in sync with the SDL.
 
 use async_graphql::{Enum, InputObject, Object, SimpleObject};
+use serde::{Deserialize, Serialize};
 
 // ======================
 // Scalar types
@@ -251,7 +252,7 @@ impl Script {
 // Property / Values
 // ======================
 
-#[derive(Debug, Clone, SimpleObject)]
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize)]
 pub struct Property {
     pub name: String,
     pub value: String,
@@ -724,4 +725,87 @@ pub struct GraphStats {
     pub unused_count: i32,
     pub has_cycles: bool,
     pub cycle_paths: Option<Vec<Vec<String>>>,
+}
+
+// ======================
+// runTests Types
+// ======================
+
+#[derive(Debug, Clone, InputObject)]
+pub struct RunTestsInput {
+    pub test_path: Option<String>,
+    pub retries: Option<i32>,
+}
+
+#[derive(Debug, Clone, SimpleObject)]
+pub struct TestExecutionResult {
+    pub success: bool,
+    pub total_count: i32,
+    pub passed_count: i32,
+    pub failed_count: i32,
+    pub error_count: i32,
+    pub skipped_count: i32,
+    pub duration_ms: i32,
+    pub suites: Vec<TestSuiteResult>,
+}
+
+#[derive(Debug, Clone, SimpleObject)]
+pub struct TestSuiteResult {
+    pub name: String,
+    pub path: String,
+    pub success: bool,
+    pub passed_count: i32,
+    pub failed_count: i32,
+    pub skipped_count: i32,
+    pub cases: Vec<TestCaseResult>,
+}
+
+#[derive(Debug, Clone, SimpleObject)]
+pub struct TestCaseResult {
+    pub name: String,
+    pub success: bool,
+    pub line: Option<i32>,
+    pub message: Option<String>,
+    pub stack_overflow: Option<bool>,
+}
+
+// ======================
+// Debugging Types (Phase 2)
+// ======================
+
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize)]
+pub struct DebuggerError {
+    pub message: String,
+    pub stack_info: Vec<StackFrame>,
+    pub timestamp: Option<String>,
+}
+
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize)]
+pub struct StackFrame {
+    pub file: String,
+    pub line: i32,
+    pub function: String,
+}
+
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize)]
+pub struct LogEntry {
+    pub message: String,
+    pub severity: String,
+    pub timestamp: String,
+    pub file: Option<String>,
+    pub line: Option<i32>,
+}
+
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize)]
+pub struct GodotObject {
+    pub id: String,
+    pub class: String,
+    pub properties: Vec<Property>,
+}
+
+#[derive(Debug, Clone, InputObject)]
+pub struct BreakpointInput {
+    pub path: String,
+    pub line: i32,
+    pub enabled: Option<bool>,
 }

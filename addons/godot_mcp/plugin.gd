@@ -9,9 +9,15 @@ const MAX_LOG_LINES = 1000
 
 var tcp_server: TCPServer
 var command_handler: Node
+var debugger_plugin: EditorDebuggerPlugin
 var log_buffer: Array = []
 
 func _enter_tree():
+	# Load debugger plugin
+	var debugger_script = load("res://addons/godot_mcp/debugger_plugin.gd")
+	debugger_plugin = debugger_script.new()
+	add_debugger_plugin(debugger_plugin)
+
 	# Load command handler
 	var handler_script = load("res://addons/godot_mcp/command_handler.gd")
 	command_handler = handler_script.new()
@@ -32,6 +38,8 @@ func _exit_tree():
 		tcp_server.stop()
 	if command_handler:
 		command_handler.queue_free()
+	if debugger_plugin:
+		remove_debugger_plugin(debugger_plugin)
 	print("Godot MCP: Server stopped")
 
 func _process(_delta):

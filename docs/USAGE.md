@@ -114,6 +114,108 @@ AI が自らゲームを実行し、ログを確認して修正するループ�
 
 ---
 
+## ✨ GQL 開発・テスト支援 (TDD) (Phase 1)
+
+AI が自律的にテストを回せるようにするための機能です。
+
+### テストの実行 (`runTests`)
+
+GdUnit4 と連携してテストを実行し、結果を構造化データで取得します。
+
+```graphql
+mutation {
+  runTests(input: { testPath: "res://tests/" }) {
+    success
+    totalCount
+    passedCount
+    failedCount
+    suites {
+      name
+      path
+      success
+      cases {
+        name
+        success
+        message
+        line
+      }
+    }
+  }
+}
+```
+
+---
+
+## ✨ GQL デバッグ・ログ統合 (Phase 2)
+
+AI がゲームの実行状態を把握し、問題を解決するための機能です。
+
+### デバッグ情報の取得
+
+デバッガーのエラー、エディターログ、実行時オブジェクトの状態を取得します。
+
+```graphql
+query {
+  # デバッガーエラーの取得
+  debuggerErrors {
+    message
+    stackInfo {
+      file
+      line
+      function
+    }
+  }
+
+  # ログの取得
+  logs(limit: 20) {
+    message
+    severity
+    timestamp
+  }
+
+  # 実行時オブジェクトのインスペクション (ID指定)
+  objectById(objectId: "12345") {
+    id
+    class
+    properties {
+      name
+      value
+      type
+    }
+  }
+}
+```
+
+### 実行制御
+
+ブレークポイントの設定や、ステップ実行が可能です。
+
+```graphql
+mutation {
+  # 実行の一時停止
+  pause {
+    success
+  }
+
+  # ステップ実行 (1行進める)
+  step {
+    success
+  }
+
+  # 実行の再開
+  resume {
+    success
+  }
+
+  # ブレークポイントの設定
+  setBreakpoint(input: { path: "res://player.gd", line: 42, enabled: true }) {
+    success
+  }
+}
+```
+
+---
+
 ## Claude Desktop 設定
 
 `%APPDATA%\Claude\claude_desktop_config.json`:

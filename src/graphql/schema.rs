@@ -69,6 +69,26 @@ impl QueryRoot {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         dependency_resolver::resolve_dependency_graph(gql_ctx, input)
     }
+
+    // ========== Debugging (Phase 2) ==========
+
+    /// Get debugger errors
+    async fn debugger_errors(&self, ctx: &Context<'_>) -> Vec<DebuggerError> {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_debugger_errors(gql_ctx).await
+    }
+
+    /// Get logs
+    async fn logs(&self, ctx: &Context<'_>, limit: Option<i32>) -> Vec<LogEntry> {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_logs(gql_ctx, limit).await
+    }
+
+    /// Get object by ID
+    async fn object_by_id(&self, ctx: &Context<'_>, object_id: String) -> Option<GodotObject> {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_object_by_id(gql_ctx, object_id).await
+    }
 }
 
 /// GraphQL Mutation Root
@@ -203,6 +223,44 @@ impl MutationRoot {
     async fn open_scene(&self, ctx: &Context<'_>, path: String) -> OperationResult {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         live_resolver::resolve_open_scene(gql_ctx, path).await
+    }
+
+    // ========== Development / Testing ==========
+
+    async fn run_tests(&self, ctx: &Context<'_>, input: RunTestsInput) -> TestExecutionResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        resolver::resolve_run_tests(gql_ctx, &input).await
+    }
+
+    // ========== Debugging Operations (Phase 2) ==========
+
+    async fn pause(&self, ctx: &Context<'_>) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_pause(gql_ctx).await
+    }
+
+    async fn resume(&self, ctx: &Context<'_>) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_resume(gql_ctx).await
+    }
+
+    async fn step(&self, ctx: &Context<'_>) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_step(gql_ctx).await
+    }
+
+    async fn set_breakpoint(&self, ctx: &Context<'_>, input: BreakpointInput) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_set_breakpoint(gql_ctx, input).await
+    }
+
+    async fn remove_breakpoint(
+        &self,
+        ctx: &Context<'_>,
+        input: BreakpointInput,
+    ) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_remove_breakpoint(gql_ctx, input).await
     }
 
     // ========== Safe change flow ==========

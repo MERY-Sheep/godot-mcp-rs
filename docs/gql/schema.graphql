@@ -4,7 +4,6 @@ Godot Query Language (GQL) - Schema (Single Source of Truth)
 - This SDL is the canonical contract for GQL.
 - `docs/DESIGN_GQL.md` explains the WHY/WHAT and links here for the exact schema.
 """
-
 schema {
   query: Query
   mutation: Mutation
@@ -22,22 +21,34 @@ Query (Read operations)
 ======================
 """
 type Query {
-  """プロジェクト全体の情報を取得"""
+  """
+  プロジェクト全体の情報を取得
+  """
   project: Project!
 
-  """シーンファイルの内容を取得"""
+  """
+  シーンファイルの内容を取得
+  """
   scene(path: String!): Scene
 
-  """スクリプトファイルの内容を取得"""
+  """
+  スクリプトファイルの内容を取得
+  """
   script(path: String!): Script
 
-  """エディター上の現在のシーンを取得（live操作）"""
+  """
+  エディター上の現在のシーンを取得（live操作）
+  """
   currentScene: LiveScene
 
-  """ノードの詳細情報を取得（live操作）"""
+  """
+  ノードの詳細情報を取得（live操作）
+  """
   node(path: String!): LiveNode
 
-  """Godotノード型の情報を取得（型メタデータ）"""
+  """
+  Godotノード型の情報を取得（型メタデータ）
+  """
   nodeTypeInfo(typeName: String!): NodeTypeInfo
 
   """
@@ -45,8 +56,26 @@ type Query {
   """
   gatherContext(input: GatherContextInput!): GatheredContext!
 
-  """プロジェクトの依存関係グラフを取得"""
+  """
+  プロジェクトの依存関係グラフを取得
+  """
   dependencyGraph(input: DependencyGraphInput): DependencyGraph!
+
+  # ========== デバッグ (Phase 2) ==========
+  """
+  デバッガーのエラー情報を取得
+  """
+  debuggerErrors: [DebuggerError!]!
+
+  """
+  ログを取得
+  """
+  logs(limit: Int): [LogEntry!]!
+
+  """
+  オブジェクトＩＤから詳細情報を取得
+  """
+  objectById(objectId: String!): GodotObject
 }
 
 """
@@ -66,13 +95,48 @@ type Mutation {
   duplicateNode(path: String!): NodeResult!
   reparentNode(path: String!, newParent: String!): NodeResult!
   setProperty(input: SetPropertyInput!): OperationResult!
-  setProperties(nodePath: String!, properties: [PropertyInput!]!): OperationResult!
+  setProperties(
+    nodePath: String!
+    properties: [PropertyInput!]!
+  ): OperationResult!
   connectSignal(input: ConnectSignalInput!): OperationResult!
   disconnectSignal(input: DisconnectSignalInput!): OperationResult!
   addToGroup(nodePath: String!, group: String!): OperationResult!
   removeFromGroup(nodePath: String!, group: String!): OperationResult!
   saveScene: OperationResult!
   openScene(path: String!): OperationResult!
+
+  # ========== 開発・テスト支援 ==========
+  """
+  GdUnit4テストを実行し、構造化された結果を返却
+  """
+  runTests(input: RunTestsInput!): TestExecutionResult!
+
+  # ========== デバッグ制御 (Phase 2) ==========
+  """
+  実行を一時停止
+  """
+  pause: OperationResult!
+
+  """
+  実行を再開
+  """
+  resume: OperationResult!
+
+  """
+  ステップイン/オーバー実行
+  """
+  step: OperationResult!
+
+  """
+  ブレークポイントを設定
+  """
+  setBreakpoint(input: BreakpointInput!): OperationResult!
+
+  """
+  ブレークポイントを解除
+  """
+  removeBreakpoint(input: BreakpointInput!): OperationResult!
 
   # ========== バッチ / 安全な変更フロー ==========
   """
@@ -290,7 +354,9 @@ input AddNodeInput {
 input SetPropertyInput {
   nodePath: String!
   property: String!
-  """値（GDScript形式の文字列）"""
+  """
+  値（GDScript形式の文字列）
+  """
   value: String!
 }
 
@@ -563,4 +629,84 @@ type GraphStats {
   cyclePaths: [[String!]!]
 }
 
+"""
+========================
+runTests Types
+========================
+"""
+input RunTestsInput {
+  """
+  実行するテストパス (res://tests/ または特定のファイル)
+  """
+  testPath: String
+  """
+  リトライ回数
+  """
+  retries: Int
+}
 
+type TestExecutionResult {
+  success: Boolean!
+  totalCount: Int!
+  passedCount: Int!
+  failedCount: Int!
+  errorCount: Int!
+  skippedCount: Int!
+  durationMs: Int!
+  suites: [TestSuiteResult!]!
+}
+
+type TestSuiteResult {
+  name: String!
+  path: String!
+  success: Boolean!
+  passedCount: Int!
+  failedCount: Int!
+  skippedCount: Int!
+  cases: [TestCaseResult!]!
+}
+
+type TestCaseResult {
+  name: String!
+  success: Boolean!
+  line: Int
+  message: String
+  stackOverflow: Boolean
+}
+
+"""
+========================
+Debugging Types (Phase 2)
+========================
+"""
+type DebuggerError {
+  message: String!
+  stackInfo: [StackFrame!]!
+  timestamp: String
+}
+
+type StackFrame {
+  file: String!
+  line: Int!
+  function: String!
+}
+
+type LogEntry {
+  message: String!
+  severity: String!
+  timestamp: String!
+  file: String
+  line: Int
+}
+
+type GodotObject {
+  id: String!
+  class: String!
+  properties: [Property!]!
+}
+
+input BreakpointInput {
+  path: String!
+  line: Int!
+  enabled: Boolean
+}

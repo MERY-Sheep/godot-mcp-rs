@@ -12,6 +12,7 @@ AI can integrally support everything from scene construction and GDScript editin
 ## Key Features
 
 - **GraphQL (GQL) Power (New! 🔥)**: Access all Godot features through a single, unified GraphQL interface.
+- **Autonomous TDD Support**: Run GdUnit4 tests via GQL and get structured error reports. Enables automatic AI-driven test-fix loops.
 - **Editor & Execution Control**: AI can launch the game, check logs, and debug.
 - **Powerful Parser**: Analyzes `.tscn`, `.gd`, and `.tres` formats, enabling structural changes.
 - **Streamlined MCP Toolset**: Only 3 core tools to learn, reducing LLM context overhead.

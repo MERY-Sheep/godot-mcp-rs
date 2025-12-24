@@ -15,22 +15,122 @@
 
 ---
 
-## Phase 1: ビジュアル検証システム 📸 　＊一時凍結
+## Phase 1: 開発サイクル支援 (GQL Native) 🔄
 
-**優先度: 🔴 最高** | **目標: 競合 GDAI MCP との機能差を埋める**
+**優先度: 🔴 最高** | **目標: 実践的なゲーム開発サイクルの統合**
 
-### 1.1 スクリーンショットキャプチャ
+GQL の構造化されたインターフェースを活かし、テスト、設定、翻訳などの「開発ループ」を直接支援します。これにより、AI が自律的に機能を実装・検証するループを確立します。
+
+### 1.1 テスト駆動開発 (TDD) 支援
+
+- [x] `mutation runTests` - GdUnit4 等と連携し、テスト結果を構造化データ(成功数/失敗リスト/行番号)で返却。
+- [x] AI が「失敗したテストのみを修正して再実行」するループを確立。
+
+### 1.2 プロジェクト設定 & 入力マップ
+
+- [ ] `mutation addInputAction` - InputMap へのアクション・イベント追加。
+- [ ] `mutation setProjectSetting` - ProjectSettings の安全な変更。
+
+### 1.3 国際化 (i18n)
+
+- [x] `mutation addTranslationKey` - 翻訳キーと訳文を管理(CSV/PO)。コード生成との整合性を保つ。
+
+---
+
+## Phase 2: 高度なデバッグ統合 🐛
+
+**優先度: 🟠 高** | **目標: AI による完全自動デバッグの実現**
+
+### 2.1 エラー・ログ情報の構造化取得
+
+- [x] `query debuggerErrors` - デバッガーパネルからスタックトレース付きで取得
+- [x] `query logs` - ログ出力元（ファイル・行）を含めたログ取得
+- [ ] `live_get_parse_errors` - スクリプトの書き込み直後の構文エラー検知 (GDScript 解析強化)
+
+### 2.2 ブレークポイント & 実行制御
+
+- [x] `mutation setBreakpoint` / `mutation removeBreakpoint`
+- [x] `mutation pause` / `mutation resume` / `mutation step` - ステップ実行によるロジック追跡
+
+### 2.3 実行時状態のインスペクション
+
+- [ ] `live_get_stack_frame_vars` - 特定のスタックフレームのローカル変数取得
+- [x] `query objectById` - ID を指定したオブジェクトの詳細状態（プロパティ一覧）取得
+
+---
+
+## Phase 3: コード生成・リファクタリング 🔧
+
+**優先度: 🟡 中** | **目標: AI による高度なコード操作**
+
+### 3.1 コード理解
+
+- [ ] `get_class_hierarchy` - クラス階層の取得
+- [ ] `find_references` - シンボル参照検索
+- [ ] `get_autoloads` - オートロード一覧
+- [ ] `analyze_dependencies` - 依存関係分析
+
+### 3.2 リファクタリング
+
+- [ ] `rename_symbol` - シンボル名変更（ファイル横断）
+- [ ] `extract_function` - 関数の抽出
+- [ ] `move_node_to_scene` - ノードを別シーンに移動
+
+### 3.3 コード生成
+
+- [ ] `generate_input_handler` - 入力ハンドラー自動生成
+- [ ] `generate_state_machine` - ステートマシン雛形生成
+- [ ] `generate_test_script` - テストスクリプト生成
+
+### 3.4 Native Shader サポート
+
+- [ ] `query validateShader` - シェーダーコードのコンパイル事前検証。
+- [ ] `mutation createVisualShaderNode` - ビジュアルシェーダーのグラフ操作（長期目標）。
+
+---
+
+## Phase 4: アセット管理強化 🎨
+
+**優先度: � 中** | **目標: 完全なアセットパイプライン**
+
+### 4.1 リソース操作
+
+- [ ] `create_material` - マテリアル作成
+- [ ] `create_mesh` - プロシージャルメッシュ生成
+- [ ] `import_asset` - 外部アセットのインポート
+- [ ] `live_set_texture` - テクスチャの動的変更
+
+### 4.2 プリセット・テンプレート拡張
+
+- [ ] `vehicle_3d` - 車両テンプレート
+- [ ] `npc_3d` - NPC テンプレート（NavMesh 対応）
+- [ ] `collectible` - 収集アイテムテンプレート
+- [ ] `projectile` - 弾丸・プロジェクタイルテンプレート
+
+### 4.3 シェーダー操作
+
+- [ ] `create_shader` - シェーダー作成
+- [ ] `analyze_shader` - シェーダー解析
+- [ ] `live_set_shader_param` - シェーダーパラメータ変更
+
+---
+
+## Phase 5: ビジュアル検証システム � 　＊一時凍結
+
+**優先度: 低** | **目標: 競合 GDAI MCP との機能差を埋める**
+
+### 5.1 スクリーンショットキャプチャ
 
 - [ ] `live_capture_screenshot` - エディタービューポートのスクリーンショット取得
 - [ ] `live_capture_game_screenshot` - 実行中ゲームのスクリーンショット取得
 - [ ] 画像を Base64 で MCP レスポンスに含める
 
-### 1.2 ビジュアル検証ループ
+### 5.2 ビジュアル検証ループ
 
 - [ ] AI がゲームを実行 → スクリーンショット撮影 → 結果検証のフロー
 - [ ] 期待する状態との差分検出（例: 壁の色が変わったか確認）
 
-### 1.3 実装詳細
+### 5.3 実装詳細
 
 ```
 Godot Plugin側:
@@ -44,149 +144,23 @@ Rust CLI側:
 
 ---
 
-## Phase 2: 高度なデバッグ統合 🐛
+## Phase 6: パフォーマンス分析 📊
 
-**優先度: 🟠 高** | **目標: AI による完全自動デバッグ**
+**優先度: 低** | **目標: パフォーマンス問題の自動検出**
 
-### 2.1 エラー情報取得
-
-- [ ] `live_get_parse_errors` - スクリプトの構文エラーをリアルタイム取得
-- [ ] `live_get_debugger_errors` - デバッガーパネルからエラー取得
-- [ ] `live_get_warnings` - エディター警告の取得
-
-### 2.2 ブレークポイント制御
-
-- [ ] `live_set_breakpoint` - ブレークポイントの設定
-- [ ] `live_remove_breakpoint` - ブレークポイントの削除
-- [ ] `live_list_breakpoints` - ブレークポイント一覧
-
-### 2.3 変数インスペクション
-
-- [ ] `live_get_local_variables` - ローカル変数の取得
-- [ ] `live_get_stack_trace` - スタックトレースの取得
-
----
-
-## Phase 3: アセット管理強化 🎨
-
-**優先度: 🟡 中** | **目標: 完全なアセットパイプライン**
-
-### 3.1 リソース操作
-
-- [ ] `create_material` - マテリアル作成
-- [ ] `create_mesh` - プロシージャルメッシュ生成
-- [ ] `import_asset` - 外部アセットのインポート
-- [ ] `live_set_texture` - テクスチャの動的変更
-
-### 3.2 プリセット・テンプレート拡張
-
-- [ ] `vehicle_3d` - 車両テンプレート
-- [ ] `npc_3d` - NPC テンプレート（NavMesh 対応）
-- [ ] `collectible` - 収集アイテムテンプレート
-- [ ] `projectile` - 弾丸・プロジェクタイルテンプレート
-
-### 3.3 シェーダー操作
-
-- [ ] `create_shader` - シェーダー作成
-- [ ] `analyze_shader` - シェーダー解析
-- [ ] `live_set_shader_param` - シェーダーパラメータ変更
-
----
-
-## Phase 4: コード生成・リファクタリング 🔧
-
-**優先度: 🟡 中** | **目標: AI による高度なコード操作**
-
-### 4.1 コード理解
-
-- [ ] `get_class_hierarchy` - クラス階層の取得
-- [ ] `find_references` - シンボル参照検索
-- [ ] `get_autoloads` - オートロード一覧
-- [ ] `analyze_dependencies` - 依存関係分析
-
-### 4.2 リファクタリング
-
-- [ ] `rename_symbol` - シンボル名変更（ファイル横断）
-- [ ] `extract_function` - 関数の抽出
-- [ ] `move_node_to_scene` - ノードを別シーンに移動
-
-### 4.3 コード生成
-
-- [ ] `generate_input_handler` - 入力ハンドラー自動生成
-- [ ] `generate_state_machine` - ステートマシン雛形生成
-- [ ] `generate_test_script` - テストスクリプト生成
-
----
-
-## Phase 5: パフォーマンス分析 📊
-
-**優先度: 🟢 中-低** | **目標: パフォーマンス問題の自動検出**
-
-### 5.1 プロファイリング
+### 6.1 プロファイリング
 
 - [ ] `start_profiler` - プロファイラー開始
 - [ ] `stop_profiler` - プロファイラー停止
 - [ ] `get_profiler_data` - プロファイリング結果取得
 
-### 5.2 分析ツール
+### 6.2 分析ツール
 
 - [ ] `analyze_draw_calls` - ドローコール分析
 - [ ] `analyze_memory_usage` - メモリ使用量分析
 - [ ] `find_performance_issues` - パフォーマンス問題検出
 
----
-
-## Phase 6: マルチシーン・プロジェクト管理 🏗️
-
-**優先度: 🟢 中-低** | **目標: 大規模プロジェクト対応**
-
-### 6.1 プロジェクト操作
-
-- [ ] `create_addon` - アドオン雛形作成
-- [ ] `manage_export_presets` - エクスポート設定管理
-- [ ] `batch_rename` - バッチリネーム
-
-### 6.2 バージョン管理統合
-
-- [ ] `get_git_status` - Git 状態取得
-- [ ] `suggest_commit_message` - コミットメッセージ提案
-
----
-
-## Phase 7: 自然言語インターフェース 🗣️
-
-**優先度: 🔵 低** | **目標: より直感的な操作**
-
-### 7.1 コマンド解釈
-
-- [ ] `natural_command` - 自然言語 →MCP コマンド変換
-  - 例: "プレイヤーにジャンプ機能を追加して"
-  - 例: "敵がプレイヤーを追跡するようにして"
-
-### 7.2 プロンプトテンプレート
-
-- [ ] 各ツールに最適なプロンプトテンプレートを提供
-- [ ] コンテキストアウェアなドキュメント生成
-
----
-
-## Phase 8: GDExtension/C++サポート 🔩
-
-**優先度: 🔵 低** | **目標: ネイティブコード対応**
-
-### 8.1 GDExtension
-
-- [ ] `analyze_gdextension` - GDExtension 解析
-- [ ] `create_gdextension_binding` - バインディング生成
-
-### 8.2 C++統合
-
-- [ ] エンジンモジュールの解析
-- [ ] カスタムノード型の検出
-
----
-
-## アーキテクチャ改善案
+### アーキテクチャ改善案
 
 ### 短期
 
@@ -206,58 +180,19 @@ Rust CLI側:
 
 ---
 
-## 競合との差分表
-
-| 機能               | godot-mcp-rs | GDAI MCP | ee0pdt/Godot-MCP |
-| :----------------- | :----------: | :------: | :--------------: |
-| ツール数           |   **56+**    |   多数   |      中程度      |
-| リアルタイム操作   |      ✅      |    ✅    |        ❌        |
-| Undo/Redo          |      ✅      |    ❓    |        ❌        |
-| スクリーンショット |  ⏳ Phase 1  |    ✅    |        ❌        |
-| デバッガー統合     |  ⏳ Phase 2  |    ✅    |        ❌        |
-| オープンソース     |    ✅ MIT    | ❌ 有料  |      ✅ MIT      |
-| Rust 実装          |      ✅      |    ❌    |        ❌        |
-
 ---
 
 ## マイルストーン
 
 | フェーズ  | 目標期間 | 主な成果物                        |
 | :-------- | :------- | :-------------------------------- |
-| Phase 1   | 2 週間   | スクリーンショット検証システム    |
+| Phase 1   | 3 週間   | 開発サイクル支援 (TDD/Input/i18n) |
 | Phase 2   | 3 週間   | 完全デバッグ統合                  |
-| Phase 3   | 3 週間   | アセット管理ツール群              |
-| Phase 4   | 2 週間   | リファクタリングツール            |
-| Phase 5   | 2 週間   | パフォーマンス分析                |
-| Phase 6-8 | 継続的   | 拡張機能                          |
-| Phase 9   | 3 週間   | 開発サイクル支援 (TDD/Input/i18n) |
-
----
-
-## Phase 9: 開発サイクル支援 (GQL Native) 🔄
-
-**優先度: 🟡 中-高** | **目標: 実践的なゲーム開発サイクルの統合**
-
-GQL の構造化されたインターフェースを活かし、テスト、設定、翻訳などの「開発ループ」を直接支援します。
-
-### 9.1 テスト駆動開発 (TDD) 支援
-
-- [ ] `mutation runTests` - GdUnit4 等と連携し、テスト結果を構造化データ(成功数/失敗リスト/行番号)で返却。
-- [ ] AI が「失敗したテストのみを修正して再実行」するループを確立。
-
-### 9.2 プロジェクト設定 & 入力マップ
-
-- [ ] `mutation addInputAction` - InputMap へのアクション・イベント追加。
-- [ ] `mutation setProjectSetting` - ProjectSettings の安全な変更。
-
-### 9.3 国際化 (i18n)
-
-- [ ] `mutation addTranslationKey` - 翻訳キーと訳文を管理(CSV/PO)。コード生成との整合性を保つ。
-
-### 9.4 Native Shader サポート
-
-- [ ] `query validateShader` - シェーダーコードのコンパイル事前検証。
-- [ ] `mutation createVisualShaderNode` - ビジュアルシェーダーのグラフ操作（長期目標）。
+| Phase 3   | 2 週間   | コード生成・リファクタリング      |
+| Phase 4   | 3 週間   | アセット管理ツール群              |
+| Phase 5   | 2 週間   | スクリーンショット検証システム    |
+| Phase 6   | 2 週間   | パフォーマンス分析                |
+| Phase 7-8 | 継続的   | 拡張機能                          |
 
 ---
 

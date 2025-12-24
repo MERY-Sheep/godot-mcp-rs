@@ -141,6 +141,28 @@ pub enum GodotLiveCommand {
     SaveScene,
     #[serde(rename = "open_scene")]
     OpenScene { scene_path: String },
+
+    // Debugging Commands
+    #[serde(rename = "get_debugger_errors")]
+    GetDebuggerErrors,
+    #[serde(rename = "get_logs")]
+    GetLogs { limit: i32 },
+    #[serde(rename = "get_object_by_id")]
+    GetObjectById { object_id: String },
+    #[serde(rename = "pause")]
+    Pause,
+    #[serde(rename = "resume")]
+    Resume,
+    #[serde(rename = "step")]
+    Step,
+    #[serde(rename = "set_breakpoint")]
+    SetBreakpoint {
+        path: String,
+        line: i32,
+        enabled: bool,
+    },
+    #[serde(rename = "remove_breakpoint")]
+    RemoveBreakpoint { path: String, line: i32 },
 }
 
 // ======================
@@ -356,6 +378,80 @@ pub async fn resolve_save_scene(ctx: &GqlContext) -> OperationResult {
 pub async fn resolve_open_scene(ctx: &GqlContext, path: String) -> OperationResult {
     let command = GodotLiveCommand::OpenScene { scene_path: path };
 
+    match execute_live_command(ctx, command).await {
+        Ok(_) => OperationResult {
+            success: true,
+            message: None,
+        },
+        Err(e) => OperationResult {
+            success: false,
+            message: Some(e.to_string()),
+        },
+    }
+}
+
+// ======================
+// Debugging Resolvers (Phase 2)
+// ======================
+
+pub async fn resolve_debugger_errors(ctx: &GqlContext) -> Vec<DebuggerError> {
+    let result = execute_live_command(ctx, GodotLiveCommand::GetDebuggerErrors).await;
+    match result {
+        Ok(val) => serde_json::from_value(val).unwrap_or_default(),
+        Err(_) => vec![],
+    }
+}
+
+pub async fn resolve_logs(ctx: &GqlContext, limit: Option<i32>) -> Vec<LogEntry> {
+    let limit = limit.unwrap_or(100);
+    let result = execute_live_command(ctx, GodotLiveCommand::GetLogs { limit }).await;
+    match result {
+        Ok(val) => serde_json::from_value(val).unwrap_or_default(),
+        Err(_) => vec![],
+    }
+}
+
+pub async fn resolve_object_by_id(ctx: &GqlContext, object_id: String) -> Option<GodotObject> {
+    let result = execute_live_command(ctx, GodotLiveCommand::GetObjectById { object_id }).await;
+    match result {
+        Ok(val) => serde_json::from_value(val).ok(),
+        Err(_) => None,
+    }
+}
+
+pub async fn resolve_pause(ctx: &GqlContext) -> OperationResult {
+    execute_simple_command(ctx, GodotLiveCommand::Pause).await
+}
+
+pub async fn resolve_resume(ctx: &GqlContext) -> OperationResult {
+    execute_simple_command(ctx, GodotLiveCommand::Resume).await
+}
+
+pub async fn resolve_step(ctx: &GqlContext) -> OperationResult {
+    execute_simple_command(ctx, GodotLiveCommand::Step).await
+}
+
+pub async fn resolve_set_breakpoint(ctx: &GqlContext, input: BreakpointInput) -> OperationResult {
+    let command = GodotLiveCommand::SetBreakpoint {
+        path: input.path,
+        line: input.line,
+        enabled: input.enabled.unwrap_or(true),
+    };
+    execute_simple_command(ctx, command).await
+}
+
+pub async fn resolve_remove_breakpoint(
+    ctx: &GqlContext,
+    input: BreakpointInput,
+) -> OperationResult {
+    let command = GodotLiveCommand::RemoveBreakpoint {
+        path: input.path,
+        line: input.line,
+    };
+    execute_simple_command(ctx, command).await
+}
+
+async fn execute_simple_command(ctx: &GqlContext, command: GodotLiveCommand) -> OperationResult {
     match execute_live_command(ctx, command).await {
         Ok(_) => OperationResult {
             success: true,

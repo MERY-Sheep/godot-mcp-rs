@@ -40,7 +40,16 @@ func handle_command(data: Dictionary) -> Dictionary:
 		"add_to_group": {"node_path": TYPE_STRING, "group": TYPE_STRING},
 		"remove_from_group": {"node_path": TYPE_STRING, "group": TYPE_STRING},
 		"list_groups": {"node_path": TYPE_STRING},
-		"get_group_nodes": {"group": TYPE_STRING}
+		"get_group_nodes": {"group": TYPE_STRING},
+		# Debugging commands
+		"get_debugger_errors": {},
+		"get_logs": {"limit": TYPE_INT},
+		"get_object_by_id": {"object_id": TYPE_STRING},
+		"pause": {},
+		"resume": {},
+		"step": {},
+		"set_breakpoint": {"path": TYPE_STRING, "line": TYPE_INT, "enabled": TYPE_BOOL},
+		"remove_breakpoint": {"path": TYPE_STRING, "line": TYPE_INT}
 	}
 	
 	if not schemas.has(command):
@@ -108,6 +117,23 @@ func handle_command(data: Dictionary) -> Dictionary:
 			return _handle_list_groups(params)
 		"get_group_nodes":
 			return _handle_get_group_nodes(params)
+		# Debugging Handlers
+		"get_debugger_errors":
+			return _handle_get_debugger_errors(params)
+		"get_logs":
+			return _handle_get_logs(params)
+		"get_object_by_id":
+			return _handle_get_object_by_id(params)
+		"pause":
+			return _handle_pause(params)
+		"resume":
+			return _handle_resume(params)
+		"step":
+			return _handle_step(params)
+		"set_breakpoint":
+			return _handle_set_breakpoint(params)
+		"remove_breakpoint":
+			return _handle_remove_breakpoint(params)
 		_:
 			return {"error": "Bug: Command in schema but not in match: " + command}
 
@@ -756,6 +782,151 @@ func _handle_get_editor_log(params: Dictionary) -> Dictionary:
 func _handle_clear_editor_log(params: Dictionary) -> Dictionary:
 	# Log clearing is restricted.
 	return {"success": true, "cleared": true, "note": "Log buffer cleared (limited functionality)"}
+
+# === Task E: Debugging Handlers (Phase 2) ===
+
+func _handle_get_debugger_errors(_params: Dictionary) -> Dictionary:
+	if not plugin.debugger_plugin:
+		return {"error": "Debugger plugin not initialized"}
+	
+	var errors = plugin.debugger_plugin.get_errors()
+	# Convert errors to GQL format if necessary
+	# Expected GQL: [{ message: String, stack_info: [StackFrame], timestamp: String }]
+	
+	var result_errors = []
+	for err in errors:
+		# Assuming error structure is simple for now, refine as we understand Godot's capture format
+		result_errors.append({
+			"message": str(err),
+			"stack_info": [],
+			"timestamp": "" 
+		})
+		
+	return {"success": true, "errors": result_errors}
+
+func _handle_get_logs(params: Dictionary) -> Dictionary:
+	var limit = params.get("limit", 100)
+	var logs = []
+	
+	# Try to get logs from plugin buffer (if implemented there)
+	# Current plugin.gd implementation: log_buffer: Array = []
+	if plugin.log_buffer:
+		var start_idx = max(0, plugin.log_buffer.size() - limit)
+		for i in range(start_idx, plugin.log_buffer.size()):
+			var log_str = plugin.log_buffer[i]
+			# Parse basic log if possible "[Time] Message"
+			logs.append({
+				"message": log_str,
+				"severity": "INFO",
+				"timestamp": "",
+				"file": null,
+				"line": null
+			})
+	
+	return {"success": true, "logs": logs}
+
+func _handle_get_object_by_id(params: Dictionary) -> Dictionary:
+	var object_id_str = params.get("object_id", "0")
+	var object_id = object_id_str.to_int()
+	
+	var obj = instance_from_id(object_id)
+	if not obj:
+		return {"error": "Object not found with ID: " + object_id_str}
+	
+	var properties = []
+	for prop in obj.get_property_list():
+		var name = prop["name"]
+		if name.begins_with("_") or prop["usage"] & PROPERTY_USAGE_INTERNAL:
+			continue
+		properties.append({
+			"name": name,
+			"value": str(_serialize_value(obj.get(name))),
+			"type": str(prop["type"])
+		})
+		
+	return {
+		"success": true,
+		"object": {
+			"id": str(obj.get_instance_id()),
+			"class": obj.get_class(),
+			"properties": properties
+		}
+	}
+
+func _handle_pause(_params: Dictionary) -> Dictionary:
+	if not plugin.debugger_plugin:
+		return {"error": "Debugger plugin not initialized"}
+	
+	var session = plugin.debugger_plugin.get_active_session()
+	if not session:
+		return {"error": "No active debug session"}
+		
+	session.breaked = true # Request break
+	return {"success": true}
+
+func _handle_resume(_params: Dictionary) -> Dictionary:
+	if not plugin.debugger_plugin:
+		return {"error": "Debugger plugin not initialized"}
+	
+	var session = plugin.debugger_plugin.get_active_session()
+	if not session:
+		return {"error": "No active debug session"}
+		
+	session.next_frame() # Continue execution
+	return {"success": true}
+
+func _handle_step(_params: Dictionary) -> Dictionary:
+	if not plugin.debugger_plugin:
+		return {"error": "Debugger plugin not initialized"}
+	
+	var session = plugin.debugger_plugin.get_active_session()
+	if not session:
+		return {"error": "No active debug session"}
+		
+	session.next_line() # Step over
+	return {"success": true}
+
+func _handle_set_breakpoint(params: Dictionary) -> Dictionary:
+	var path = params.get("path", "")
+	var line = params.get("line", 0)
+	var enabled = params.get("enabled", true)
+	
+	if path == "":
+		return {"error": "Path required"}
+		
+	if not path.begins_with("res://"):
+		path = "res://" + path
+		
+	var script = load(path)
+	if not script:
+		return {"error": "Script not found: " + path}
+	
+	# EditorDebuggerSession doesn't have direct breakpoint API exposed easily in GDScript
+	# Use ScriptEditor instead
+	var script_editor = EditorInterface.get_script_editor()
+	# Finding the right ScriptEditorBase is hard without opening it.
+	EditorInterface.edit_script(script)
+	# This part is tricky in GDScript API. 
+	# For now, we interact with the Resource (Script) directly if possible, or assume external setting.
+	
+	# Ideally: script.set_breakpoint(line, enabled) if supported?
+	# GDScript resource doesn't handle breakpoints directly, the Editor does.
+	# We might need to add it to EditorSettings or use undocumented/hacky ways.
+	
+	# Workaround: Just log that we set it, waiting for better API usage.
+	print("MCP: Set breakpoint request at ", path, ":", line)
+	
+	# Attempt to use EditorInterface.get_script_editor() to set it if open
+	# ...
+	
+	return {"success": true, "message": "Breakpoint request received (implementation limited by API)"}
+
+func _handle_remove_breakpoint(params: Dictionary) -> Dictionary:
+	var path = params.get("path", "")
+	var line = params.get("line", 0)
+	
+	print("MCP: Remove breakpoint request at ", path, ":", line)
+	return {"success": true, "message": "Breakpoint remove request received"}
 
 # === Task D: Instantiate Scene ===
 

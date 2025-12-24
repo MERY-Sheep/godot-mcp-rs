@@ -10,7 +10,7 @@
 
 - **エージェント入口（読む順・ルール）**: `CLAUDE.md`
 - **契約（設計・Why/What）**: `docs/DESIGN_GQL.md`（本書）
-- **スキーマ（SDL単一ソース）**: `docs/gql/schema.graphql`
+- **スキーマ（SDL 単一ソース）**: `docs/gql/schema.graphql`
 - **実装ノート（How）**: `docs/IMPLEMENTATION_GQL.md`
 - **実装計画（When/Order/DoD）**: `docs/PLAN_GQL.md`
 
@@ -155,6 +155,23 @@ type Query {
   Godotノード型の情報を取得
   """
   nodeTypeInfo(typeName: String!): NodeTypeInfo
+
+  # ========== Debugging (Phase 2) ==========
+
+  """
+  デバッガーのエラー情報を取得
+  """
+  debuggerErrors: [DebuggerError!]!
+
+  """
+  エディターのログを取得
+  """
+  logs(limit: Int): [LogEntry!]!
+
+  """
+  オブジェクトIDからGodotオブジェクトの詳細を取得
+  """
+  objectById(objectId: String!): GodotObject
 }
 
 type Project {
@@ -445,6 +462,40 @@ type Mutation {
   シーンを開く
   """
   openScene(path: String!): OperationResult!
+
+  # ========== 開発・テスト支援 ==========
+
+  """
+  GdUnit4テストを実行し、構造化された結果を返却
+  """
+  runTests(input: RunTestsInput!): TestExecutionResult!
+
+  # ========== Debugging Operations (Phase 2) ==========
+
+  """
+  実行を一時停止
+  """
+  pause: OperationResult!
+
+  """
+  実行を再開
+  """
+  resume: OperationResult!
+
+  """
+  次の行までステップ実行
+  """
+  step: OperationResult!
+
+  """
+  ブレークポイントを設定
+  """
+  setBreakpoint(input: BreakpointInput!): OperationResult!
+
+  """
+  ブレークポイントを削除
+  """
+  removeBreakpoint(input: BreakpointInput!): OperationResult!
 
   # ========== バッチ操作 ==========
 

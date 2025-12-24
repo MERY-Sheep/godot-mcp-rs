@@ -28,6 +28,23 @@
 | `live_set_property`   | `setProperty(input: { nodePath: "...", property: "...", value: "..." }) { success }`                 |
 | `live_connect_signal` | `connectSignal(input: { fromNode: "...", signal: "...", toNode: "...", method: "..." }) { success }` |
 
+### デバッグ・ログ系 (Phase 2)
+
+| 旧ツール                   | GraphQL                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `live_get_editor_log`      | `query { logs(limit: 50) { message severity } }`                               |
+| `live_get_debugger_errors` | `query { debuggerErrors { message stackInfo { file line } } }`                 |
+| `live_pause`               | `mutation { pause { success } }`                                               |
+| `live_resume`              | `mutation { resume { success } }`                                              |
+| `live_step`                | `mutation { step { success } }`                                                |
+| なし (新規)                | `query { objectById(objectId: "...") { id class properties { name value } } }` |
+
+### 開発・テスト系
+
+| 旧ツール          | GraphQL Mutation                                            |
+| ----------------- | ----------------------------------------------------------- |
+| `run_project`相当 | `runTests(input: { testPath: "res://tests/" }) { success }` |
+
 ### バッチ操作
 
 複数の変更をまとめて検証・適用：
