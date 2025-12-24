@@ -298,7 +298,7 @@ mod dependency_resolver_tests {
 
         let ctx = GqlContext::new(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_project"));
 
-        let (nodes, edges) = build_dependency_graph(&ctx);
+        let (nodes, _edges) = build_dependency_graph(&ctx);
 
         // Should have at least some nodes
         assert!(!nodes.is_empty(), "Should have at least one node");

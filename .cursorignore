@@ -1,0 +1,10 @@
+# Cursor Indexing Ignore
+CLAUDE.md
+docs/archived/
+target/
+.cargo/
+Cargo.lock
+.git/
+.claude/
+.gemini/
+.antigravity/

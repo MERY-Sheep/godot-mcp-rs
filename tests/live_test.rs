@@ -9,11 +9,6 @@ fn test_project_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_project")
 }
 
-fn build_test_schema() -> godot_mcp_rs::graphql::GqlSchema {
-    let ctx = GqlContext::new(test_project_path());
-    build_schema_with_context(ctx)
-}
-
 fn build_test_schema_with_port(port: u16) -> godot_mcp_rs::graphql::GqlSchema {
     let ctx = GqlContext::new(test_project_path()).with_port(port);
     build_schema_with_context(ctx)

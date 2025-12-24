@@ -11,39 +11,26 @@ AI can integrally support everything from scene construction and GDScript editin
 
 ## Key Features
 
-- **Editor & Execution Control (New! 🚀)**: AI can launch the game, check logs, and debug.
+- **GraphQL (GQL) Power (New! 🔥)**: Access all Godot features through a single, unified GraphQL interface.
+- **Editor & Execution Control**: AI can launch the game, check logs, and debug.
 - **Powerful Parser**: Analyzes `.tscn`, `.gd`, and `.tres` formats, enabling structural changes.
-- **Rich Toolset**: 34 tools covering everything from file exploration to advanced scene diffing and project validation.
-- **Template Generation**: Instant scene construction from templates like `player_3d`, `enemy_3d`, `ui_menu`, etc.
+- **Streamlined MCP Toolset**: Only 3 core tools to learn, reducing LLM context overhead.
 - **Fast Rust Implementation**: Low-latency synchronous and asynchronous processing based on the official `rmcp` SDK.
 
-## Toolset (34 tools)
+## Core Toolset
 
-Refer to [USAGE.en.md](docs/USAGE.en.md) for detailed usage.
+This server provides 3 unified tools that interface with the underlying GraphQL engine. Refer to [MIGRATION_GUIDE.md](docs/gql/MIGRATION_GUIDE.md) for shifting from legacy tools.
 
-### 🎮 Editor & Execution Control
+1. **`godot_query`**: Read project state, scenes, scripts, and stats using GQL.
+2. **`godot_mutate`**: Modify project structure, create files, and interact with the Live editor.
+3. **`godot_introspect`**: Discover available queries and mutations via SDL.
 
-- Run project (`run_project`), Stop project (`stop_project`)
-- Capture debug output (`get_debug_output`)
-- Launch editor, Check version
+### Capabilities covered by GQL:
 
-### 📁 Project Analysis
-
-- **Project Stats** (`get_project_stats`), **Validation** (`validate_project`)
-- **Node Type Info** (`get_node_type_info`) - Details on 25+ node types
-
-### 🏗️ Scene Manipulation (.tscn)
-
-- **Template Generation** (`create_scene_from_template`) - 5 templates
-- Add/Remove/Set nodes, Hierarchical JSON export, Diff comparison
-
-### 📜 Script Manipulation (.gd)
-
-- Automatic insertion of functions and `@export` variables, static analysis
-
-### 💎 Resource Manipulation (.tres)
-
-- Resource parsing
+- **Project Analysis**: Stats, validation, and node type information.
+- **Scene Manipulation**: Add/Remove nodes, edit properties, and hierarchical export.
+- **Script & Resource**: GDScript parsing/editing and `.tres` resource management.
+- **Live Interaction**: Real-time manipulation of the running Godot editor.
 
 ## Quick Start
 

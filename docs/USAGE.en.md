@@ -1,6 +1,11 @@
-# Godot MCP Server - Usage
+# Godot MCP Server - Usage Guide
 
-## Tool List (56 tools total)
+> [!WARNING] > **Important: Toolset Consolidation**
+> The individual MCP tools listed below have been consolidated into 3 core GraphQL (GQL) tools: `godot_query`, `godot_mutate`, and `godot_introspect`.
+> While these legacy tools are removed from the MCP server interface, they remain accessible via CLI for debugging and serve as the internal implementation for GQL resolvers.
+> For the new GQL-based workflow, please refer to [MIGRATION_GUIDE.md](gql/MIGRATION_GUIDE.md).
+
+## Legacy Toolset (Internal Implementation)
 
 ### ✨ Real-time Operations (live-\*)
 

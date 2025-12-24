@@ -2,9 +2,12 @@
 
 既存の MCP ツールから GraphQL ツール（`godot_query`, `godot_mutate`, `godot_introspect`）への移行ガイドです。
 
-## 概要
+## 重要
 
-従来の 56 個以上の個別ツールを、3 つの汎用 GraphQL ツールで代替できます。
+> [!IMPORTANT]
+> 2025 年 12 月 24 日のアップデートより、従来の 56 個の個別 MCP ツールは **MCP サーバーから削除** されました。
+> 現在は `godot_query`, `godot_mutate`, `godot_introspect` の 3 つの GraphQL ツールが推奨される唯二のインターフェースです。
+> CLI 版では後方互換性のために引き続き旧コマンドを使用できます。
 
 ## ツール対応表
 

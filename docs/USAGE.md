@@ -1,8 +1,11 @@
 # Godot MCP Server - 使い方
 
-# Godot MCP Server - 使い方
+> [!WARNING] > **重要: ツールセットの集約**
+> 現在、本リポジトリの MCP ツールは GraphQL (GQL) 3 ツール（`godot_query`, `godot_mutate`, `godot_introspect`）に集約されています。
+> 以下の個別ツール群は MCP サーバーからは削除されましたが、CLI モードでのデバッグ用、および GQL リゾルバの内部実装として引き続き利用・参照可能です。
+> 新しい使い方については [MIGRATION_GUIDE.md](gql/MIGRATION_GUIDE.md) を参照してください。
 
-## ツール一覧 (全 56 個)
+## ツール一覧 (レガシー/内部実装)
 
 ### ✨ リアルタイム操作 (live-\*)
 

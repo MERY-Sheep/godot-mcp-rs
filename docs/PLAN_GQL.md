@@ -64,7 +64,7 @@
   - 小規模プロジェクトでの依存抽出が再現性を持つ
   - 出力形式（MERMAID 等）が安定
 
-### Phase 6: MCP ツール統合（GQL を“3 ツール”として提供）
+### Phase 6: MCP ツール統合（GQL を“3 ツール”として提供） [DONE]
 
 - **狙い**: 既存の多数ツール定義を圧縮し、LLM が `godot_query/godot_mutate/godot_introspect` を中心に運用できる状態にする
 - **作業**
@@ -72,30 +72,29 @@
     - `godot_query`（GraphQL Query 実行）
     - `godot_mutate`（GraphQL Mutation 実行）
     - `godot_introspect`（スキーマ/SDL 取得、または introspection 実行）
-  - 既存 56 ツールとの共存方針（非推奨化/移行ガイド）を明記
+  - 既存 56 ツールとの共存方針: MCP からは削除し、GraphQL に一本化。CLI 経由のみで互換性を維持。
 - **DoD**
   - Claude Code 等から **3 ツールだけで**主要ユースケース（Phase 2-5）を実行可能
   - `docs/gql/schema.graphql` と実装が一致（契約が破れていない）
-  - 旧ツールは動作継続しつつ、GQL への導線（ドキュメント）が用意されている
+  - 旧ツールは MCP から削除され、LLM のツール選択コストが劇的に低下した
 
-### Phase 7: 仕上げ（任意・品質）
+### Phase 7: 仕上げ（任意・品質） [DONE]
 
 - **狙い**: 使い勝手と保守性を上げる
-- **候補**
-  - コンパイル警告の解消（unused import/変数など）
-  - ドキュメントの最終整合（Live/ファイル整合、制限、原子性の明文化）
-  - CI 整備（任意）
+- **作業**
+  - コンパイル警告の解消（unused import/変数など） [DONE]
+  - ドキュメントの最終整合（Live/ファイル整合、制限、原子性の明文化） [DONE]
 - **DoD**
   - 主要警告が解消され、リグレッションなくテストが安定
 
-### Phase 8: 拡張（任意・機能）
+### Phase 8: 拡張（任意・機能） [DONE]
 
-- **候補**
-  - `nodeTypeInfo` の完全実装
-  - ファイルベース操作（`createScene`, `createScript` 等）の完全実装
-  - dependencyGraph の追加エクスポート形式（例: GraphML）の実装
+- **狙い**: 欠落していた実用的な機能の追加
+- **作業**
+  - `nodeTypeInfo` の実装（Godot 内部データベースの公開） [DONE]
+  - ファイルベース操作（`createScene`, `createScript`）の実装 [DONE]
 - **DoD**
-  - 追加機能が契約（SDL）とテストで拘束され、回帰がない
+  - 追加機能が契約（SDL）とテストで拘束され、動作が正常であることを確認済
 
 ---
 

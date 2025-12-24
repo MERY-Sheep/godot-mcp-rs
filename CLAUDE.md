@@ -1,54 +1,47 @@
-## Claude Code / LLM Agent ガイド（GQL）
+## Claude Code / LLM Agent ガイド（GQL 中心）
 
-このリポジトリで GQL（Godot Query Language）関連の作業をする LLM エージェント向けの入口です。  
+このリポジトリは Godot プロジェクトを GraphQL (GQL) 経由で操作するための MCP サーバーです。  
 **迷ったらまずここを読み、指示に従ってください。**
 
 ---
 
-## 何を参照すべきか（読む順）
+## 開発の要点（Source of Truth）
 
-- **契約（設計 / Why・What）**: `docs/DESIGN_GQL.md`
-- **スキーマ（単一ソース / SDL）**: `docs/gql/schema.graphql`
-- **実装ノート（How）**: `docs/IMPLEMENTATION_GQL.md`
-- **実装計画（順序 / DoD / TDD 運用）**: `docs/PLAN_GQL.md`
-
-> 重要: スキーマの正は **`docs/gql/schema.graphql`** です。  
-> `DESIGN_GQL.md` 内のスキーマ断片は説明用であり、差分管理対象ではありません。
+- **スキーマ (定数)**: [docs/gql/schema.graphql](file:///c:/Work/godot-mcp-rs/docs/gql/schema.graphql)
+  - 全機能の定義、型、エラーコードの唯一の正典です。
+- **設計契約**: [docs/DESIGN_GQL.md](file:///c:/Work/godot-mcp-rs/docs/DESIGN_GQL.md)
+- **移行ガイド**: [docs/gql/MIGRATION_GUIDE.md](file:///c:/Work/godot-mcp-rs/docs/gql/MIGRATION_GUIDE.md)
 
 ---
 
-## このリポジトリの基本構造（既存資産）
+## MCP ツール（GQL 一本化）
 
-- **静的解析（ファイル）**: `src/godot/`（`.tscn/.gd/.tres`）
-- **Live 操作（Editor 連携）**: `src/tools/live.rs`（HTTP/JSON → Godot plugin）
-- **MCP プロトコル**: `rmcp`
+従来の個別ツール（56 個以上）は廃止され、以下の **3 つの GQL ツール** に集約されました。
 
----
+1. `godot_query`: データの読み取り（シーン、スクリプト、プロジェクト統計等）
+2. `godot_mutate`: データの変更（ノード追加、プロパティ設定、ファイル作成等）
+3. `godot_introspect`: スキーマ（SDL）の取得
 
-## 作業ルール（TDD 前提）
-
-### 優先順位
-
-1. **契約を壊さない**（`schema.graphql` と `DESIGN_GQL.md`）
-2. **テストを先に追加**
-3. 最小実装でテストを通す
-4. 必要ならリファクタ（テストを維持）
-
-### 禁止事項
-
-- 設計に無い挙動を、実装で勝手に追加しない
-  - 必要なら「設計への提案」を先に出す
-- `args` を **文字列 JSON** で扱わない（`args: JSON!` に統一）
-- Live とファイルの “どちらが正か” を曖昧にしたまま混在 API を増やさない
+LLM は、`godot_introspect` で利用可能なクエリ/ミューテーションを調べ、`godot_query`/`godot_mutate` を実行してください。
 
 ---
 
-## 変更時のチェックリスト（最小）
+## 基本構造
 
-- スキーマ変更を伴う場合:
-  - `docs/gql/schema.graphql` を更新
-  - 影響と互換性を `docs/DESIGN_GQL.md` に追記
-  - `docs/PLAN_GQL.md` の DoD/テスト方針に反映
+- `src/graphql/`: GQL エンジン、リゾルバ、型定義。
+- `src/tools/`: MCP ハンドラ、旧ツール群（CLI 互換用）。
+- `src/godot/`: Godot ファイルの静的解析（パーサー）。
+- `addons/`: Godot 側にインストールする MCP 連携プラグイン。
+
+---
+
+## 作業ルール
+
+- **TDD (最重要)**: 変更時は必ず `tests/` 内にテストを追加/更新してください。
+- **後方互換性**: MCP ツール定義からは削除されましたが、旧ツールは CLI モード (`godot-mcp-rs.exe call-tool ...`) 用に実装を保持しています。
+- **禁止事項**:
+  - `schema.graphql` に無い機能を勝手に追加しない。
+  - `args: JSON!` を個別の型にバラさない。
 
 ---
 
@@ -56,10 +49,9 @@
 
 ```bash
 cargo build          # ビルド
-cargo test           # テスト実行
-cargo fmt            # フォーマット
-cargo clippy         # リント
-cargo run -- --help  # CLI ヘルプ表示
+cargo test           # テスト実行（TDD 必須）
+cargo clippy         # リント（警告ゼロを目指す）
+cargo run -- call-tool <NAME> <JSON_ARGS>  # 特定ツールの直接デバッグ
 ```
 
 ## 環境
