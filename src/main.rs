@@ -7,7 +7,7 @@ mod cli;
 mod server;
 
 // Re-export from lib for internal use
-use godot_mcp_rs::{godot, graphql, tools};
+use godot_mcp_rs::{godot, tools};
 
 use anyhow::Result;
 use clap::Parser;

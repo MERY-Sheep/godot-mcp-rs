@@ -5,6 +5,8 @@
 use async_graphql::{Context, EmptySubscription, Object, Schema};
 
 use super::context::GqlContext;
+use super::dependency_resolver;
+use super::live_resolver;
 use super::resolver;
 use super::types::*;
 
@@ -32,59 +34,40 @@ impl QueryRoot {
     }
 
     /// Get current scene in editor (live)
-    async fn current_scene(&self) -> Option<LiveScene> {
-        // TODO: Implement live resolver (Phase 4)
-        None
+    async fn current_scene(&self, ctx: &Context<'_>) -> Option<LiveScene> {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_current_scene(gql_ctx).await
     }
 
     /// Get node details (live)
-    async fn node(&self, _path: String) -> Option<LiveNode> {
-        // TODO: Implement live resolver (Phase 4)
-        None
+    async fn node(&self, ctx: &Context<'_>, path: String) -> Option<LiveNode> {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_node(gql_ctx, path).await
     }
 
     /// Get Godot node type information
-    async fn node_type_info(&self, _type_name: String) -> Option<NodeTypeInfo> {
-        // TODO: Implement resolver
-        None
+    async fn node_type_info(&self, type_name: String) -> Option<NodeTypeInfo> {
+        resolver::resolve_node_type_info(&type_name)
     }
 
     /// Gather context from entry point (index-chan inspired)
-    async fn gather_context(&self, input: GatherContextInput) -> GatheredContext {
-        // TODO: Implement resolver (Phase 5)
-        GatheredContext {
-            entry_point: input.entry_point,
-            main: ContextItem {
-                path: String::new(),
-                file_type: FileType::Scene,
-                scene: None,
-                script: None,
-            },
-            dependencies: vec![],
-            dependents: vec![],
-            resources: vec![],
-            summary: ContextSummary {
-                total_files: 0,
-                total_functions: 0,
-            },
-        }
+    async fn gather_context(
+        &self,
+        ctx: &Context<'_>,
+        input: GatherContextInput,
+    ) -> GatheredContext {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        dependency_resolver::resolve_gather_context(gql_ctx, input)
     }
 
     /// Get project dependency graph
-    async fn dependency_graph(&self, _input: Option<DependencyGraphInput>) -> DependencyGraph {
-        // TODO: Implement resolver (Phase 5)
-        DependencyGraph {
-            nodes: vec![],
-            edges: vec![],
-            stats: GraphStats {
-                node_count: 0,
-                edge_count: 0,
-                unused_count: 0,
-                has_cycles: false,
-                cycle_paths: None,
-            },
-            exported_data: None,
-        }
+    async fn dependency_graph(
+        &self,
+        ctx: &Context<'_>,
+        input: Option<DependencyGraphInput>,
+    ) -> DependencyGraph {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        dependency_resolver::resolve_dependency_graph(gql_ctx, input)
     }
 }
 
@@ -95,13 +78,9 @@ pub struct MutationRoot;
 impl MutationRoot {
     // ========== File-based operations ==========
 
-    async fn create_scene(&self, _input: CreateSceneInput) -> SceneResult {
-        // TODO: Implement resolver
-        SceneResult {
-            success: false,
-            scene: None,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn create_scene(&self, ctx: &Context<'_>, input: CreateSceneInput) -> SceneResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        resolver::create_scene(gql_ctx, &input)
     }
 
     async fn create_scene_from_template(&self, _input: TemplateSceneInput) -> SceneResult {
@@ -113,32 +92,21 @@ impl MutationRoot {
         }
     }
 
-    async fn create_script(&self, _input: CreateScriptInput) -> ScriptResult {
-        // TODO: Implement resolver
-        ScriptResult {
-            success: false,
-            script: None,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn create_script(&self, ctx: &Context<'_>, input: CreateScriptInput) -> ScriptResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        resolver::create_script(gql_ctx, &input)
     }
 
     // ========== Live operations ==========
 
-    async fn add_node(&self, _input: AddNodeInput) -> NodeResult {
-        // TODO: Implement resolver (Phase 4)
-        NodeResult {
-            success: false,
-            node: None,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn add_node(&self, ctx: &Context<'_>, input: AddNodeInput) -> NodeResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_add_node(gql_ctx, input).await
     }
 
-    async fn remove_node(&self, _path: String) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
-        OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn remove_node(&self, ctx: &Context<'_>, path: String) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_remove_node(gql_ctx, path).await
     }
 
     async fn duplicate_node(&self, _path: String) -> NodeResult {
@@ -159,72 +127,82 @@ impl MutationRoot {
         }
     }
 
-    async fn set_property(&self, _input: SetPropertyInput) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
-        OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn set_property(&self, ctx: &Context<'_>, input: SetPropertyInput) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_set_property(gql_ctx, input).await
     }
 
     async fn set_properties(
         &self,
-        _node_path: String,
-        _properties: Vec<PropertyInput>,
+        ctx: &Context<'_>,
+        node_path: String,
+        properties: Vec<PropertyInput>,
     ) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
+        // Execute each property set in sequence
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        for prop in properties {
+            let input = SetPropertyInput {
+                node_path: node_path.clone(),
+                property: prop.name,
+                value: prop.value,
+            };
+            let result = live_resolver::resolve_set_property(gql_ctx, input).await;
+            if !result.success {
+                return result;
+            }
+        }
         OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
+            success: true,
+            message: None,
         }
     }
 
-    async fn connect_signal(&self, _input: ConnectSignalInput) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
-        OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn connect_signal(
+        &self,
+        ctx: &Context<'_>,
+        input: ConnectSignalInput,
+    ) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_connect_signal(gql_ctx, input).await
     }
 
-    async fn disconnect_signal(&self, _input: DisconnectSignalInput) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
-        OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn disconnect_signal(
+        &self,
+        ctx: &Context<'_>,
+        input: DisconnectSignalInput,
+    ) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_disconnect_signal(gql_ctx, input).await
     }
 
-    async fn add_to_group(&self, _node_path: String, _group: String) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
-        OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn add_to_group(
+        &self,
+        ctx: &Context<'_>,
+        node_path: String,
+        group: String,
+    ) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_add_to_group(gql_ctx, node_path, group).await
     }
 
-    async fn remove_from_group(&self, _node_path: String, _group: String) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
-        OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn remove_from_group(
+        &self,
+        ctx: &Context<'_>,
+        node_path: String,
+        group: String,
+    ) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_remove_from_group(gql_ctx, node_path, group).await
     }
 
-    async fn save_scene(&self) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
-        OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn save_scene(&self, ctx: &Context<'_>) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_save_scene(gql_ctx).await
     }
 
-    async fn open_scene(&self, _path: String) -> OperationResult {
-        // TODO: Implement resolver (Phase 4)
-        OperationResult {
-            success: false,
-            message: Some("Not implemented".to_string()),
-        }
+    async fn open_scene(&self, ctx: &Context<'_>, path: String) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_open_scene(gql_ctx, path).await
     }
 
     // ========== Safe change flow ==========
@@ -238,20 +216,12 @@ impl MutationRoot {
         resolver::validate_mutation(gql_ctx, &input)
     }
 
-    async fn preview_mutation(
-        &self,
-        ctx: &Context<'_>,
-        input: MutationPlanInput,
-    ) -> PreviewResult {
+    async fn preview_mutation(&self, ctx: &Context<'_>, input: MutationPlanInput) -> PreviewResult {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         resolver::preview_mutation(gql_ctx, &input)
     }
 
-    async fn apply_mutation(
-        &self,
-        ctx: &Context<'_>,
-        input: ApplyMutationInput,
-    ) -> ApplyResult {
+    async fn apply_mutation(&self, ctx: &Context<'_>, input: ApplyMutationInput) -> ApplyResult {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         resolver::apply_mutation(gql_ctx, &input)
     }

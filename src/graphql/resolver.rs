@@ -242,19 +242,16 @@ fn convert_godot_scene_to_gql(scene: &GodotScene, path: &str) -> Scene {
         .collect();
 
     // Root is the first node (no parent)
-    let root = all_nodes
-        .first()
-        .cloned()
-        .unwrap_or_else(|| SceneNode {
-            name: "Root".to_string(),
-            r#type: "Node".to_string(),
-            path: ".".to_string(),
-            properties: vec![],
-            children: vec![],
-            script: None,
-            groups: vec![],
-            signals: vec![],
-        });
+    let root = all_nodes.first().cloned().unwrap_or_else(|| SceneNode {
+        name: "Root".to_string(),
+        r#type: "Node".to_string(),
+        path: ".".to_string(),
+        properties: vec![],
+        children: vec![],
+        script: None,
+        groups: vec![],
+        signals: vec![],
+    });
 
     // External resources
     let external_resources: Vec<ExternalResource> = scene
@@ -333,10 +330,7 @@ fn parse_signal_definition(signal_str: &str) -> (String, Vec<String>) {
         if args_str.trim().is_empty() {
             (name, vec![])
         } else {
-            let args: Vec<String> = args_str
-                .split(',')
-                .map(|a| a.trim().to_string())
-                .collect();
+            let args: Vec<String> = args_str.split(',').map(|a| a.trim().to_string()).collect();
             (name, args)
         }
     } else {
@@ -349,10 +343,7 @@ fn parse_signal_definition(signal_str: &str) -> (String, Vec<String>) {
 // ======================
 
 /// Validate a mutation plan
-pub fn validate_mutation(
-    ctx: &GqlContext,
-    input: &MutationPlanInput,
-) -> MutationValidationResult {
+pub fn validate_mutation(ctx: &GqlContext, input: &MutationPlanInput) -> MutationValidationResult {
     let start = Instant::now();
     let mut errors = Vec::new();
     let warnings = Vec::new();
@@ -479,10 +470,7 @@ fn validate_operation(
 }
 
 /// Preview a mutation (generate diff)
-pub fn preview_mutation(
-    _ctx: &GqlContext,
-    input: &MutationPlanInput,
-) -> PreviewResult {
+pub fn preview_mutation(_ctx: &GqlContext, input: &MutationPlanInput) -> PreviewResult {
     let mut nodes_added = 0;
     let mut nodes_removed = 0;
     let mut properties_changed = 0;
@@ -511,7 +499,10 @@ pub fn preview_mutation(
                     args.get("name").and_then(|v| v.as_str()),
                     args.get("type").and_then(|v| v.as_str()),
                 ) {
-                    diff_lines.push(format!("+ [node name=\"{}\" type=\"{}\" parent=\"{}\"]", name, node_type, parent));
+                    diff_lines.push(format!(
+                        "+ [node name=\"{}\" type=\"{}\" parent=\"{}\"]",
+                        name, node_type, parent
+                    ));
                 }
             }
             OperationType::RemoveNode => {
@@ -544,12 +535,9 @@ pub fn preview_mutation(
 }
 
 /// Apply a mutation
-pub fn apply_mutation(
-    _ctx: &GqlContext,
-    input: &ApplyMutationInput,
-) -> ApplyResult {
+pub fn apply_mutation(_ctx: &GqlContext, input: &ApplyMutationInput) -> ApplyResult {
     let mut applied_count = 0;
-    let mut errors = Vec::new();
+    let errors: Vec<ApplyError> = Vec::new();
 
     // Generate undo action ID using system time
     let undo_action_id = if !input.operations.is_empty() {
@@ -563,7 +551,7 @@ pub fn apply_mutation(
     };
 
     // Process each operation
-    for (index, op) in input.operations.iter().enumerate() {
+    for (_index, _op) in input.operations.iter().enumerate() {
         // In a real implementation, we would:
         // 1. Load the affected scene file
         // 2. Apply the modification
@@ -583,6 +571,309 @@ pub fn apply_mutation(
         },
         errors,
         undo_action_id,
+    }
+}
+
+// ======================
+// File-based Operations
+// ======================
+
+/// Create a new scene file
+pub fn create_scene(ctx: &GqlContext, input: &CreateSceneInput) -> SceneResult {
+    let project_path = &ctx.project_path;
+
+    // Convert res:// path to filesystem path
+    let relative_path = input.path.strip_prefix("res://").unwrap_or(&input.path);
+    let file_path = project_path.join(relative_path);
+
+    // Check if file already exists
+    if file_path.exists() {
+        return SceneResult {
+            success: false,
+            scene: None,
+            message: Some(format!("Scene already exists: {}", input.path)),
+        };
+    }
+
+    // Ensure parent directory exists
+    if let Some(parent) = file_path.parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            return SceneResult {
+                success: false,
+                scene: None,
+                message: Some(format!("Failed to create directory: {}", e)),
+            };
+        }
+    }
+
+    // Generate minimal tscn content
+    let tscn_content = format!(
+        r#"[gd_scene format=3]
+
+[node name="{}" type="{}"]
+"#,
+        input.root_name, input.root_type
+    );
+
+    // Write file
+    if let Err(e) = fs::write(&file_path, tscn_content) {
+        return SceneResult {
+            success: false,
+            scene: None,
+            message: Some(format!("Failed to write scene: {}", e)),
+        };
+    }
+
+    SceneResult {
+        success: true,
+        scene: None, // Could load and return the scene
+        message: Some(format!("Created scene: {}", input.path)),
+    }
+}
+
+/// Create a new GDScript file
+pub fn create_script(ctx: &GqlContext, input: &CreateScriptInput) -> ScriptResult {
+    let project_path = &ctx.project_path;
+
+    // Convert res:// path to filesystem path
+    let relative_path = input.path.strip_prefix("res://").unwrap_or(&input.path);
+    let file_path = project_path.join(relative_path);
+
+    // Check if file already exists
+    if file_path.exists() {
+        return ScriptResult {
+            success: false,
+            script: None,
+            message: Some(format!("Script already exists: {}", input.path)),
+        };
+    }
+
+    // Ensure parent directory exists
+    if let Some(parent) = file_path.parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            return ScriptResult {
+                success: false,
+                script: None,
+                message: Some(format!("Failed to create directory: {}", e)),
+            };
+        }
+    }
+
+    // Generate GDScript content
+    let class_name_line = input
+        .class_name
+        .as_ref()
+        .map(|name| format!("class_name {}\n", name))
+        .unwrap_or_default();
+
+    let script_content = format!(
+        r#"{}extends {}
+
+
+func _ready() -> void:
+	pass
+
+
+func _process(delta: float) -> void:
+	pass
+"#,
+        class_name_line, input.extends
+    );
+
+    // Write file
+    if let Err(e) = fs::write(&file_path, script_content) {
+        return ScriptResult {
+            success: false,
+            script: None,
+            message: Some(format!("Failed to write script: {}", e)),
+        };
+    }
+
+    ScriptResult {
+        success: true,
+        script: None, // Could load and return the script
+        message: Some(format!("Created script: {}", input.path)),
+    }
+}
+
+// ======================
+// Node Type Info Resolver
+// ======================
+
+/// Resolve node type information from static database
+pub fn resolve_node_type_info(type_name: &str) -> Option<NodeTypeInfo> {
+    let data = get_node_type_data(type_name)?;
+
+    // Convert key_properties to NodePropertyInfo
+    let properties: Vec<NodePropertyInfo> = data
+        .properties
+        .iter()
+        .map(|(name, type_hint)| NodePropertyInfo {
+            name: name.clone(),
+            property_type: type_hint.clone(),
+            hint: None,
+        })
+        .collect();
+
+    // Convert key_signals to SignalInfo
+    let signals: Vec<SignalInfo> = data
+        .signals
+        .iter()
+        .map(|sig| SignalInfo {
+            name: sig.clone(),
+            arguments: vec![],
+        })
+        .collect();
+
+    Some(NodeTypeInfo {
+        type_name: type_name.to_string(),
+        properties,
+        signals,
+    })
+}
+
+/// Internal node type data
+struct NodeTypeData {
+    properties: Vec<(String, String)>,
+    signals: Vec<String>,
+}
+
+/// Get node type data from static database
+fn get_node_type_data(type_name: &str) -> Option<NodeTypeData> {
+    match type_name {
+        "CharacterBody3D" => Some(NodeTypeData {
+            properties: vec![
+                ("velocity".to_string(), "Vector3".to_string()),
+                ("floor_max_angle".to_string(), "float".to_string()),
+                ("motion_mode".to_string(), "MotionMode".to_string()),
+                ("up_direction".to_string(), "Vector3".to_string()),
+                ("slide_on_ceiling".to_string(), "bool".to_string()),
+            ],
+            signals: vec![],
+        }),
+        "RigidBody3D" => Some(NodeTypeData {
+            properties: vec![
+                ("mass".to_string(), "float".to_string()),
+                ("gravity_scale".to_string(), "float".to_string()),
+                ("linear_velocity".to_string(), "Vector3".to_string()),
+                ("angular_velocity".to_string(), "Vector3".to_string()),
+                ("freeze".to_string(), "bool".to_string()),
+            ],
+            signals: vec!["body_entered".to_string(), "body_exited".to_string()],
+        }),
+        "Area3D" => Some(NodeTypeData {
+            properties: vec![
+                ("monitoring".to_string(), "bool".to_string()),
+                ("monitorable".to_string(), "bool".to_string()),
+                ("priority".to_string(), "int".to_string()),
+            ],
+            signals: vec![
+                "body_entered".to_string(),
+                "body_exited".to_string(),
+                "area_entered".to_string(),
+                "area_exited".to_string(),
+            ],
+        }),
+        "Node3D" => Some(NodeTypeData {
+            properties: vec![
+                ("position".to_string(), "Vector3".to_string()),
+                ("rotation".to_string(), "Vector3".to_string()),
+                ("scale".to_string(), "Vector3".to_string()),
+                ("visible".to_string(), "bool".to_string()),
+            ],
+            signals: vec!["visibility_changed".to_string()],
+        }),
+        "Camera3D" => Some(NodeTypeData {
+            properties: vec![
+                ("current".to_string(), "bool".to_string()),
+                ("fov".to_string(), "float".to_string()),
+                ("near".to_string(), "float".to_string()),
+                ("far".to_string(), "float".to_string()),
+            ],
+            signals: vec![],
+        }),
+        "MeshInstance3D" => Some(NodeTypeData {
+            properties: vec![
+                ("mesh".to_string(), "Mesh".to_string()),
+                ("skeleton".to_string(), "NodePath".to_string()),
+                ("skin".to_string(), "Skin".to_string()),
+            ],
+            signals: vec![],
+        }),
+        "CharacterBody2D" => Some(NodeTypeData {
+            properties: vec![
+                ("velocity".to_string(), "Vector2".to_string()),
+                ("floor_max_angle".to_string(), "float".to_string()),
+                ("motion_mode".to_string(), "MotionMode".to_string()),
+            ],
+            signals: vec![],
+        }),
+        "Sprite2D" => Some(NodeTypeData {
+            properties: vec![
+                ("texture".to_string(), "Texture2D".to_string()),
+                ("flip_h".to_string(), "bool".to_string()),
+                ("flip_v".to_string(), "bool".to_string()),
+                ("centered".to_string(), "bool".to_string()),
+            ],
+            signals: vec!["texture_changed".to_string()],
+        }),
+        "AnimationPlayer" => Some(NodeTypeData {
+            properties: vec![
+                ("current_animation".to_string(), "StringName".to_string()),
+                ("autoplay".to_string(), "String".to_string()),
+                ("speed_scale".to_string(), "float".to_string()),
+            ],
+            signals: vec![
+                "animation_started".to_string(),
+                "animation_finished".to_string(),
+                "animation_changed".to_string(),
+            ],
+        }),
+        "Timer" => Some(NodeTypeData {
+            properties: vec![
+                ("wait_time".to_string(), "float".to_string()),
+                ("one_shot".to_string(), "bool".to_string()),
+                ("autostart".to_string(), "bool".to_string()),
+            ],
+            signals: vec!["timeout".to_string()],
+        }),
+        "Button" => Some(NodeTypeData {
+            properties: vec![
+                ("text".to_string(), "String".to_string()),
+                ("disabled".to_string(), "bool".to_string()),
+            ],
+            signals: vec![
+                "pressed".to_string(),
+                "button_down".to_string(),
+                "button_up".to_string(),
+            ],
+        }),
+        "Label" => Some(NodeTypeData {
+            properties: vec![
+                ("text".to_string(), "String".to_string()),
+                (
+                    "horizontal_alignment".to_string(),
+                    "HorizontalAlignment".to_string(),
+                ),
+                (
+                    "vertical_alignment".to_string(),
+                    "VerticalAlignment".to_string(),
+                ),
+            ],
+            signals: vec![],
+        }),
+        "Node" => Some(NodeTypeData {
+            properties: vec![
+                ("name".to_string(), "StringName".to_string()),
+                ("process_mode".to_string(), "ProcessMode".to_string()),
+            ],
+            signals: vec![
+                "ready".to_string(),
+                "tree_entered".to_string(),
+                "tree_exited".to_string(),
+            ],
+        }),
+        _ => None,
     }
 }
 

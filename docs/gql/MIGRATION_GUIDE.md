@@ -1,0 +1,88 @@
+# GQL 移行ガイド
+
+既存の MCP ツールから GraphQL ツール（`godot_query`, `godot_mutate`, `godot_introspect`）への移行ガイドです。
+
+## 概要
+
+従来の 56 個以上の個別ツールを、3 つの汎用 GraphQL ツールで代替できます。
+
+## ツール対応表
+
+### Read 系（Query）
+
+| 旧ツール            | GraphQL Query                                                             |
+| ------------------- | ------------------------------------------------------------------------- |
+| `list_all_scenes`   | `{ project { scenes { path } } }`                                         |
+| `get_project_stats` | `{ project { stats { sceneCount scriptCount } } }`                        |
+| `read_scene`        | `{ scene(path: "res://...") { root { name type children { name } } } }`   |
+| `read_script`       | `{ script(path: "res://...") { functions { name } variables { name } } }` |
+
+### Write 系（Mutation）
+
+| 旧ツール              | GraphQL Mutation                                                                                     |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| `live_add_node`       | `addNode(input: { parent: "...", name: "...", type: "..." }) { success }`                            |
+| `live_set_property`   | `setProperty(input: { nodePath: "...", property: "...", value: "..." }) { success }`                 |
+| `live_connect_signal` | `connectSignal(input: { fromNode: "...", signal: "...", toNode: "...", method: "..." }) { success }` |
+
+### バッチ操作
+
+複数の変更をまとめて検証・適用：
+
+```graphql
+mutation {
+  validateMutation(
+    input: {
+      operations: [
+        {
+          type: ADD_NODE
+          args: { parent: "/root", name: "Enemy", type: "CharacterBody3D" }
+        }
+        {
+          type: SET_PROPERTY
+          args: { nodePath: "/root/Enemy", property: "visible", value: "true" }
+        }
+      ]
+    }
+  ) {
+    isValid
+    errors {
+      code
+      message
+    }
+  }
+}
+```
+
+## 使い方
+
+### godot_query
+
+```json
+{
+  "query": "{ project { name scenes { path } } }"
+}
+```
+
+### godot_mutate
+
+```json
+{
+  "mutation": "mutation { addNode(input: { parent: \".\", name: \"Test\", type: \"Node3D\" }) { success } }"
+}
+```
+
+### godot_introspect
+
+```json
+{
+  "format": "SDL"
+}
+```
+
+## メリット
+
+- **型安全**: GraphQL スキーマによる事前検証
+- **柔軟性**: 必要なフィールドだけを取得
+- **一貫性**: 統一されたエラー形式
+- **発見可能性**: `godot_introspect` でスキーマを確認可能

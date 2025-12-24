@@ -26,7 +26,7 @@ impl GodotTools {
     ) -> Result<CallToolResult, McpError> {
         // #region agent log
         let log_path = ".cursor/debug.log";
-        let cmd_json = serde_json::to_string(&command).unwrap_or_default();
+        let _cmd_json = serde_json::to_string(&command).unwrap_or_default();
         let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
             use std::io::Write;
             writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live:entry\",\"message\":\"execute_live entry\",\"data\":{{\"port\":{:?},\"command_type\":\"{:?}\"}},\"timestamp\":{}}}", port, std::mem::discriminant(&command), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())

@@ -1,11 +1,14 @@
 //! MCP Tool Definitions - Godot MCP Server
 
 mod editor;
+mod gql_tools;
 mod live;
 mod project;
 mod resource;
 mod scene;
 mod script;
+
+use gql_tools::{GqlIntrospectRequest, GqlMutateRequest, GqlQueryRequest};
 
 use rmcp::{
     model::{CallToolRequestParam, CallToolResult, ListToolsResult, PaginatedRequestParam, Tool},
@@ -1055,6 +1058,22 @@ impl ServerHandler for GodotTools {
                     "Instantiate a scene via the Godot plugin",
                     schema_to_json_object::<LiveInstantiateSceneRequest>(),
                 ),
+                // === GQL Tools (Phase 6) ===
+                Tool::new(
+                    "godot_query",
+                    "Execute a GraphQL query against the Godot project. Use this to read project structure, scenes, scripts, and dependencies.",
+                    schema_to_json_object::<GqlQueryRequest>(),
+                ),
+                Tool::new(
+                    "godot_mutate",
+                    "Execute a GraphQL mutation to modify the Godot project. Use this for adding nodes, setting properties, and other changes.",
+                    schema_to_json_object::<GqlMutateRequest>(),
+                ),
+                Tool::new(
+                    "godot_introspect",
+                    "Get the GraphQL schema (SDL or introspection). Use this to discover available queries and mutations.",
+                    schema_to_json_object::<GqlIntrospectRequest>(),
+                ),
             ];
 
             Ok(ListToolsResult {
@@ -1165,6 +1184,17 @@ impl ServerHandler for GodotTools {
                 "live_get_group_nodes" => self.handle_live_get_group_nodes(request.arguments).await,
                 "live_instantiate_scene" => {
                     self.handle_live_instantiate_scene(request.arguments).await
+                }
+                // === GQL Tools (Phase 6) ===
+                "godot_query" => {
+                    gql_tools::handle_godot_query(self.get_base_path(), request.arguments).await
+                }
+                "godot_mutate" => {
+                    gql_tools::handle_godot_mutate(self.get_base_path(), request.arguments).await
+                }
+                "godot_introspect" => {
+                    gql_tools::handle_godot_introspect(self.get_base_path(), request.arguments)
+                        .await
                 }
                 _ => Err(McpError::invalid_request(
                     format!("Unknown tool: {}", request.name),

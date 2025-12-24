@@ -4,7 +4,6 @@
 //! Keep in sync with the SDL.
 
 use async_graphql::{Enum, InputObject, Object, SimpleObject};
-use serde::{Deserialize, Serialize};
 
 // ======================
 // Scalar types

@@ -4,6 +4,8 @@
 //! This module implements the schema in Rust using async-graphql.
 
 pub mod context;
+pub mod dependency_resolver;
+pub mod live_resolver;
 mod resolver;
 mod schema;
 mod types;
