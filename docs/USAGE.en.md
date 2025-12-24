@@ -1,9 +1,6 @@
 # Godot MCP Server - Usage Guide
 
-> [!WARNING] > **Important: Toolset Consolidation**
-> The individual MCP tools listed below have been consolidated into 3 core GraphQL (GQL) tools: `godot_query`, `godot_mutate`, and `godot_introspect`.
-> While these legacy tools are removed from the MCP server interface, they remain accessible via CLI for debugging and serve as the internal implementation for GQL resolvers.
-> For the new GQL-based workflow, please refer to [MIGRATION_GUIDE.md](gql/MIGRATION_GUIDE.md).
+The main operations of this project are integrated into the GraphQL (GQL) interface. While legacy tools remain available via CLI, we recommend using GQL tools for standard MCP use and advanced automation.
 
 ## GraphQL CLI Commands (Recommended)
 

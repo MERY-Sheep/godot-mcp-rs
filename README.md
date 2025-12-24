@@ -5,35 +5,47 @@
 [![Godot](https://img.shields.io/badge/Godot-4.x-green.svg)](https://godotengine.org)
 
 An MCP server for highly advanced manipulation and analysis of Godot game engine projects from AI (LLMs).
-AI can integrally support everything from scene construction and GDScript editing to project execution and debugging.
+It provides a powerful GraphQL API that seamlessly integrates static project analysis with real-time editor interaction.
 
 [日本語版はこちら (Japanese version)](README.ja.md)
 
-## Key Features
+## 🛠️ Core Toolset (GraphQL API)
 
-- **GraphQL (GQL) Power (New! 🔥)**: Access all Godot features through a single, unified GraphQL interface.
-- **Autonomous TDD Support**: Run GdUnit4 tests via GQL and get structured error reports. Enables automatic AI-driven test-fix loops.
-- **Editor & Execution Control**: AI can launch the game, check logs, and debug.
-- **Powerful Parser**: Analyzes `.tscn`, `.gd`, and `.tres` formats, enabling structural changes.
-- **Streamlined MCP Toolset**: Only 3 core tools to learn, reducing LLM context overhead.
-- **Fast Rust Implementation**: Low-latency synchronous and asynchronous processing based on the official `rmcp` SDK.
+All Godot operations are consolidated into 3 versatile GraphQL tools, allowing LLMs to manipulate projects with minimal context overhead:
 
-## Core Toolset
+1. **`godot_query`**: Read-only operations.
 
-This server provides 3 unified tools that interface with the underlying GraphQL engine. Refer to [MIGRATION_GUIDE.md](docs/gql/MIGRATION_GUIDE.md) for shifting from legacy tools.
+   - **Project Analysis**: Fetch project metadata, statistics, and validation status.
+   - **Structure Discovery**: Analyze scene hierarchies, script definitions, and resource dependencies (Dependency Graph).
+   - **Live Monitoring**: Capture logs and inspect node/variable states in the running editor.
 
-1. **`godot_query`**: Read project state, scenes, scripts, and stats using GQL.
-2. **`godot_mutate`**: Modify project structure, create files, and interact with the Live editor.
-3. **`godot_introspect`**: Discover available queries and mutations via SDL.
+2. **`godot_mutate`**: Operations that modify the project.
 
-### Capabilities covered by GQL:
+   - **Project Editing**: Add/remove nodes, change properties, and modify scripts.
+   - **Live Interaction**: Manipulate the active editor UI, play animations, and connect signals.
+   - **Safe Change Flow**: Validate and preview changes (via Diff) before applying them.
 
-- **Project Analysis**: Stats, validation, and node type information.
-- **Scene Manipulation**: Add/Remove nodes, edit properties, and hierarchical export.
-- **Script & Resource**: GDScript parsing/editing and `.tres` resource management.
-- **Live Interaction**: Real-time manipulation of the running Godot editor.
+3. **`godot_introspect`**: Self-describing API discovery.
+   - **API Schema**: Get the full list of available queries, mutations, and types in SDL format.
 
-## Quick Start
+## 🚀 Key Features
+
+- **Autonomous TDD Support**: Run GdUnit4 tests via GQL and retrieve structured error reports. Facilitates AI-driven test-fix loops.
+- **Editor Live Interaction**: Reflect changes instantly in the editor UI. All operations are recorded in the editor's **Undo/Redo history**.
+- **Deep Static Analysis**: Directly parses `.tscn`, `.gd`, and `.tres` files to understand project structure even when the editor is closed.
+
+## 🏗️ Architecture
+
+This project uses a hybrid approach to balance high-performance analysis with deep engine integration:
+
+- **Rust Side (Core Server)**:
+  - Responsible for high-speed parsing of project files, providing the GraphQL schema, and MCP communication.
+  - Being editor-independent, it works perfectly in CI environments or before the editor is launched.
+- **GDScript Side (Editor Plugin)**:
+  - Accesses internal Godot Editor APIs for real-time node manipulation and execution control.
+  - Communicates with the Rust server via local high-speed protocols (SSE/HTTP).
+
+## 🔧 Getting Started
 
 ### 1. Build
 
@@ -41,11 +53,9 @@ This server provides 3 unified tools that interface with the underlying GraphQL 
 cargo build --release
 ```
 
-### 2. Environment Variables (Optional)
+### 2. Enable Godot Plugin
 
-```bash
-set GODOT_PATH=C:\path\to\godot.exe
-```
+Copy `addons/godot_mcp` to your project's `addons/` directory and enable the plugin in Project Settings.
 
 ### 3. Claude Desktop Configuration
 
@@ -55,13 +65,26 @@ set GODOT_PATH=C:\path\to\godot.exe
 {
   "mcpServers": {
     "godot": {
-      "command": "C:\\Work\\godot-mcp-rs\\target\\release\\godot-mcp-rs.exe"
+      "command": "C:\\path\\to\\godot-mcp-rs.exe",
+      "env": {
+        "GODOT_PATH": "C:\\path\\to\\godot.exe"
+      }
     }
   }
 }
 ```
 
-See [mcp_config.json.example](mcp_config.json.example) for more options.
+## 💻 CLI Mode
+
+Use GraphQL for automation scripts and pipelines directly from your terminal.
+
+```bash
+# Query project statistics
+godot-mcp-rs tool gql-query --project ./my_game --query "{ project { stats { sceneCount } } }"
+
+# Introspect schema
+godot-mcp-rs tool gql-introspect --project ./my_game --format SDL
+```
 
 ## License
 

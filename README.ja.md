@@ -5,33 +5,45 @@
 [![Godot](https://img.shields.io/badge/Godot-4.x-green.svg)](https://godotengine.org)
 
 Godot ゲームエンジンのプロジェクトを AI (LLM) から高度に操作・分析するための Model Context Protocol (MCP) サーバーです。
-ファイルベースの解析に加え、エディタープラグインを介した**リアルタイム (live) 操作**を強力にサポートします。
+強力な GraphQL API を提供し、プロジェクトの静的解析から実行中のエディターのリアルタイム操作までをシームレスに統合します。
 
-## 主な特徴
+## 🛠️ コア・ツールセット (GraphQL API)
 
-- **GraphQL (GQL) による統合操作 (New! 🔥)**: すべての Godot 操作を単一の GraphQL インターフェース経由で実行可能。
-- **自律的 TDD 支援**: GraphQL 経由で GdUnit4 テストを実行し、エラー箇所を構造化データとして取得。AI による自動修正ループを実現。
-- **リアルタイム操作 (live)**: エディターを開いたまま、ノードの追加・変更・シグナル接続・アニメーション作成を即座に反映。
-- **完全な Undo/Redo サポート**: live 操作はすべて Godot エディターの Undo 履歴に残るため、安心して試行錯誤が可能。
-- **強力なパーサー**: `.tscn`, `.gd`, `.tres` 形式を解析し、静的なファイル操作も構造的にサポート。
-- **合理化されたツールセット**: わずか 3 つのコアツールにより、LLM のコンテキスト消費を最小限に抑えます。
+すべての Godot 操作は、以下の 3 つの汎用 GraphQL ツールに統合されています。これにより、LLM は最小限のコンテキストで最大限の自由度を持ってプロジェクトを操作できます。
 
-## ツールセット (GQL 一本化)
+1. **`godot_query`**: 読み取り専用の操作。
 
-従来の 50 個以上の個別ツールは GQL エンジンに統合されました。現在は以下の 3 つの汎用ツールが提供されています。詳細は [MIGRATION_GUIDE.md](docs/gql/MIGRATION_GUIDE.md) を参照してください。
+   - **プロジェクト分析**: プロジェクトの基本情報、統計、バリデーション結果の取得。
+   - **構造の把握**: シーン階層、スクリプト定義、リソース間の依存関係（依存グラフ）の解析。
+   - **実行状態の監視**: 実行中のエディターからのログ取得、変数/ノードの状態インスペクション。
 
-1. **`godot_query`**: プロジェクト状態、シーン、スクリプト、統計情報の読み取り。
-2. **`godot_mutate`**: プロジェクト構造の変更、ファイル作成、実機/エディター操作。
-3. **`godot_introspect`**: 利用可能なクエリやミューテーションの定義（SDL）を取得。
+2. **`godot_mutate`**: 変更を伴う操作。
 
-### GQL で可能な操作例:
+   - **プロジェクトの編集**: シーン内のノード追加/削除、プロパティ変更、スクリプトの修正。
+   - **リアルタイム操作**: エディター上のノードを即座に動かす、アニメーションを再生する、シグナルを接続する。
+   - **安全な変更フロー**: バリデーションとプレビュー（Diff 生成）を経て、段階的に変更を適用。
 
-- **プロジェクト分析**: 統計、バリデーション、ノード型メタデータの取得。
-- **シーン操作**: ノードの追加/削除、プロパティ変更、階層の JSON エクスポート。
-- **スクリプト & リソース**: GDScript の解析・編集、`.tres` リソース管理。
-- **リアルタイム連携**: 実行中の Godot エディターに対する即時反映操作。
+3. **`godot_introspect`**: 自己記述的な操作。
+   - **API 探索**: 現在のサーバーが提供するすべてのクエリ、ミューテーション、およびデータ型を SDL (Schema Definition Language) 形式で取得。
 
-## インストールとセットアップ
+## 🚀 主な機能
+
+- **自律的 TDD 支援**: GraphQL 経由で GdUnit4 テストを実行し、失敗箇所を構造化データとして取得。AI による自動修正ループをサポート。
+- **エディター・Live 操作**: エディターを開いたまま、操作内容を即座に UI に反映。すべての操作はエディターの **Undo/Redo 履歴**に残ります。
+- **強力な静的解析**: エディターが起動していない状態でも、`.tscn`, `.gd`, `.tres` ファイルを直接解析し、プロジェクト構造を把握。
+
+## 🏗️ アーキテクチャ
+
+本プロジェクトは、効率的な解析と深いエンジン統合を両立させるため、ハイブリッド構成を採用しています。
+
+- **Rust サイド (Core Server)**:
+  - 膨大なプロジェクトファイルの高速パース、GraphQL スキーマの提供、MCP 通信を担当。
+  - エディター非依存で動作するため、CI 環境やエディター起動前でも高い解析能力を発揮します。
+- **GDScript サイド (Editor Plugin)**:
+  - Godot エディター内部の API にアクセスし、リアルタイムのノード操作や実行制御を担当。
+  - Rust サーバーとは、ローカルの高速通信（SSE/HTTP）を介して連携します。
+
+## 🔧 セットアップ
 
 ### 1. ビルド
 
@@ -39,10 +51,9 @@ Godot ゲームエンジンのプロジェクトを AI (LLM) から高度に操�
 cargo build --release
 ```
 
-### 2. Godot プラグインのインストール
+### 2. Godot プラグインの有効化
 
-1. `addons/godot_mcp` ディレクトリをあなたのプロジェクトの `addons/` フォルダにコピーします。
-2. Project Settings -> Plugins から **Godot MCP** を有効にします。
+`addons/godot_mcp` を自身の Godot プロジェクトの `addons/` フォルダに配置し、プロジェクト設定からプラグインを有効にしてください。
 
 ### 3. Claude Desktop 設定
 
@@ -61,21 +72,16 @@ cargo build --release
 }
 ```
 
-詳細は [mcp_config.json.example](mcp_config.json.example) を参照してください。
+## 💻 CLI モード
 
-## CLI モード
-
-MCP サーバーとしてだけでなく、単体の CLI ツールとしても利用可能です。
+CLI ツールとして、シェルスクリプトやパイプラインからも GraphQL を活用可能です。
 
 ```bash
-# GraphQL クエリの実行
-godot-mcp-rs tool gql-query --project ./my_project --query "{ project { name stats { sceneCount } } }"
+# プロジェクト統計のクエリ
+godot-mcp-rs tool gql-query --project ./my_game --query "{ project { stats { sceneCount scriptCount } } }"
 
-# リアルタイムでノードを追加
-godot-mcp-rs tool live-add-node --name "Bot" --node-type "CharacterBody3D"
-
-# プロジェクトの状態を確認
-godot-mcp-rs tool get-project-stats --project ./my_game
+# スキーマの探索
+godot-mcp-rs tool gql-introspect --project ./my_game --format SDL
 ```
 
 ## ライセンス
