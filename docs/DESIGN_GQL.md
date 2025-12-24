@@ -8,7 +8,7 @@
 
 ## 関連ドキュメント（役割分担）
 
-- **エージェント入口（読む順・ルール）**: `CLAUDE.md`
+- **エージェント入口（読む順・ルール）**: `LLM_Context.md`
 - **契約（設計・Why/What）**: `docs/DESIGN_GQL.md`（本書）
 - **スキーマ（SDL 単一ソース）**: `docs/gql/schema.graphql`
 - **実装ノート（How）**: `docs/IMPLEMENTATION_GQL.md`
