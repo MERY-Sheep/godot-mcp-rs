@@ -1,0 +1,40 @@
+---
+source: tests/resolver_test.rs
+expression: data
+---
+{
+  "scene": {
+    "allNodes": [
+      {
+        "name": "Player",
+        "path": ".",
+        "type": "CharacterBody3D"
+      },
+      {
+        "name": "Collision",
+        "path": "Collision",
+        "type": "CollisionShape3D"
+      },
+      {
+        "name": "Mesh",
+        "path": "Mesh",
+        "type": "MeshInstance3D"
+      },
+      {
+        "name": "Camera",
+        "path": "Camera",
+        "type": "Camera3D"
+      },
+      {
+        "name": "AnimationPlayer",
+        "path": "AnimationPlayer",
+        "type": "AnimationPlayer"
+      }
+    ],
+    "path": "res://scenes/player.tscn",
+    "root": {
+      "name": "Player",
+      "type": "CharacterBody3D"
+    }
+  }
+}

@@ -1,0 +1,494 @@
+---
+source: tests/schema_contract_test.rs
+expression: sdl
+---
+input AddNodeInput {
+	parent: String!
+	name: String!
+	type: String!
+	properties: [PropertyInput!]
+	groups: [String!]
+}
+
+type AffectedFile {
+	path: String!
+	changeType: FileChangeType!
+}
+
+type ApplyError {
+	operationIndex: Int!
+	message: String!
+}
+
+input ApplyMutationInput {
+	operations: [PlannedOperation!]!
+	createBackup: Boolean
+	backupDescription: String
+}
+
+type ApplyResult {
+	success: Boolean!
+	appliedCount: Int!
+	backupPath: String
+	errors: [ApplyError!]!
+	undoActionId: String
+}
+
+type ChangeSummary {
+	nodesAdded: Int!
+	nodesRemoved: Int!
+	propertiesChanged: Int!
+	signalsConnected: Int!
+}
+
+input ConnectSignalInput {
+	fromNode: String!
+	signal: String!
+	toNode: String!
+	method: String!
+}
+
+type ContextItem {
+	path: String!
+	type: FileType!
+	scene: Scene
+	script: Script
+}
+
+type ContextSummary {
+	totalFiles: Int!
+	totalFunctions: Int!
+}
+
+input CreateSceneInput {
+	path: String!
+	rootName: String!
+	rootType: String!
+}
+
+input CreateScriptInput {
+	path: String!
+	extends: String!
+	className: String
+}
+
+type DependencyGraph {
+	nodes(filter: GraphNodeFilter, limit: Int, offset: Int): [GraphNode!]!
+	edges: [GraphEdge!]!
+	stats: GraphStats!
+	exportedData: String
+}
+
+input DependencyGraphInput {
+	directory: String
+	fileTypes: [FileType!]
+	format: GraphFormat
+}
+
+input DisconnectSignalInput {
+	fromNode: String!
+	signal: String!
+	toNode: String!
+	method: String!
+}
+
+type ExternalResource {
+	id: Int!
+	type: String!
+	path: String!
+}
+
+enum FileChangeType {
+	CREATED
+	MODIFIED
+	DELETED
+}
+
+enum FileType {
+	SCENE
+	SCRIPT
+	RESOURCE
+	SHADER
+}
+
+type Function {
+	name: String!
+	arguments: [String!]!
+}
+
+input GatherContextInput {
+	entryPoint: String!
+	depth: Int
+	include: [FileType!]
+}
+
+type GatheredContext {
+	entryPoint: String!
+	main: ContextItem!
+	dependencies: [ContextItem!]!
+	dependents: [ContextItem!]!
+	resources: [ResourceInfo!]!
+	summary: ContextSummary!
+}
+
+type GraphEdge {
+	from: String!
+	to: String!
+	referenceType: ReferenceType!
+}
+
+enum GraphFormat {
+	JSON
+	GRAPHML
+	DOT
+	MERMAID
+}
+
+type GraphNode {
+	id: String!
+	label: String!
+	type: FileType!
+	inDegree: Int!
+	outDegree: Int!
+	isUnused: Boolean!
+}
+
+input GraphNodeFilter {
+	isUnused: Boolean
+}
+
+type GraphStats {
+	nodeCount: Int!
+	edgeCount: Int!
+	unusedCount: Int!
+	hasCycles: Boolean!
+	cyclePaths: [[String!]!]
+}
+
+"""
+A scalar that can represent any JSON value.
+"""
+scalar JSON
+
+type LiveNode {
+	name: String!
+	type: String!
+	path: String!
+	globalPosition: Vector3
+	globalPosition2D: Vector2
+	properties: [Property!]!
+	children: [LiveNode!]!
+	availableSignals: [SignalInfo!]!
+	connectedSignals: [SignalConnection!]!
+}
+
+type LiveScene {
+	path: String
+	root: LiveNode!
+	selectedNodes: [LiveNode!]!
+}
+
+input MutationPlanInput {
+	operations: [PlannedOperation!]!
+}
+
+type MutationRoot {
+	createScene(input: CreateSceneInput!): SceneResult!
+	createSceneFromTemplate(input: TemplateSceneInput!): SceneResult!
+	createScript(input: CreateScriptInput!): ScriptResult!
+	addNode(input: AddNodeInput!): NodeResult!
+	removeNode(path: String!): OperationResult!
+	duplicateNode(path: String!): NodeResult!
+	reparentNode(path: String!, newParent: String!): NodeResult!
+	setProperty(input: SetPropertyInput!): OperationResult!
+	setProperties(nodePath: String!, properties: [PropertyInput!]!): OperationResult!
+	connectSignal(input: ConnectSignalInput!): OperationResult!
+	disconnectSignal(input: DisconnectSignalInput!): OperationResult!
+	addToGroup(nodePath: String!, group: String!): OperationResult!
+	removeFromGroup(nodePath: String!, group: String!): OperationResult!
+	saveScene: OperationResult!
+	openScene(path: String!): OperationResult!
+	validateMutation(input: MutationPlanInput!): MutationValidationResult!
+	previewMutation(input: MutationPlanInput!): PreviewResult!
+	applyMutation(input: ApplyMutationInput!): ApplyResult!
+}
+
+type MutationValidationError {
+	operationIndex: Int!
+	code: String!
+	message: String!
+	suggestion: String
+}
+
+type MutationValidationResult {
+	isValid: Boolean!
+	errors: [MutationValidationError!]!
+	warnings: [MutationValidationWarning!]!
+	validationTimeMs: Int!
+}
+
+type MutationValidationWarning {
+	operationIndex: Int!
+	message: String!
+}
+
+type NodePropertyInfo {
+	name: String!
+	type: String!
+	hint: String
+}
+
+type NodeResult {
+	success: Boolean!
+	node: LiveNode
+	message: String
+}
+
+type NodeTypeInfo {
+	typeName: String!
+	properties: [NodePropertyInfo!]!
+	signals: [SignalInfo!]!
+}
+
+type OperationResult {
+	success: Boolean!
+	message: String
+}
+
+enum OperationType {
+	ADD_NODE
+	REMOVE_NODE
+	SET_PROPERTY
+	SET_PROPERTIES
+	CONNECT_SIGNAL
+	DISCONNECT_SIGNAL
+	ADD_TO_GROUP
+	REMOVE_FROM_GROUP
+	REPARENT_NODE
+	DUPLICATE_NODE
+	CREATE_SCRIPT
+	ATTACH_SCRIPT
+}
+
+input PlannedOperation {
+	type: OperationType!
+	args: JSON!
+}
+
+type PreviewResult {
+	success: Boolean!
+	diff: String!
+	affectedFiles: [AffectedFile!]!
+	summary: ChangeSummary!
+}
+
+"""
+Project information
+"""
+type Project {
+	name: String!
+	path: String!
+	scenes: [SceneFile!]!
+	scripts: [ScriptFile!]!
+	stats: ProjectStats!
+	validation: ProjectValidationResult!
+}
+
+"""
+Project statistics
+"""
+type ProjectStats {
+	sceneCount: Int!
+	scriptCount: Int!
+	resourceCount: Int!
+}
+
+type ProjectValidationError {
+	file: String!
+	line: Int
+	message: String!
+	severity: String
+}
+
+type ProjectValidationResult {
+	isValid: Boolean!
+	errors: [ProjectValidationError!]!
+	warnings: [ProjectValidationWarning!]!
+}
+
+type ProjectValidationWarning {
+	file: String
+	message: String!
+}
+
+type Property {
+	name: String!
+	value: String!
+	type: String
+}
+
+input PropertyInput {
+	name: String!
+	value: String!
+}
+
+type QueryRoot {
+	"""
+	Get project information
+	"""
+	project: Project!
+	"""
+	Get scene file contents
+	"""
+	scene(path: String!): Scene
+	"""
+	Get script file contents
+	"""
+	script(path: String!): Script
+	"""
+	Get current scene in editor (live)
+	"""
+	currentScene: LiveScene
+	"""
+	Get node details (live)
+	"""
+	node(path: String!): LiveNode
+	"""
+	Get Godot node type information
+	"""
+	nodeTypeInfo(typeName: String!): NodeTypeInfo
+	"""
+	Gather context from entry point (index-chan inspired)
+	"""
+	gatherContext(input: GatherContextInput!): GatheredContext!
+	"""
+	Get project dependency graph
+	"""
+	dependencyGraph(input: DependencyGraphInput): DependencyGraph!
+}
+
+enum ReferenceType {
+	INSTANTIATES
+	ATTACHES_SCRIPT
+	USES_RESOURCE
+	PRELOADS
+	LOADS
+}
+
+type ResourceInfo {
+	path: String!
+	type: String
+}
+
+type Scene {
+	path: String!
+	root: SceneNode!
+	allNodes: [SceneNode!]!
+	externalResources: [ExternalResource!]!
+}
+
+"""
+Scene file reference
+"""
+type SceneFile {
+	path: String!
+}
+
+type SceneNode {
+	name: String!
+	type: String!
+	path: String!
+	properties: [Property!]!
+	property(name: String!): Property
+	children: [SceneNode!]!
+	script: Script
+	groups: [String!]!
+	signals: [SignalConnection!]!
+}
+
+type SceneResult {
+	success: Boolean!
+	scene: Scene
+	message: String
+}
+
+type Script {
+	path: String!
+	extends: String!
+	className: String
+	functions: [Function!]!
+	variables: [Variable!]!
+	signals: [SignalDefinition!]!
+	exports: [Variable!]!
+}
+
+"""
+Script file reference
+"""
+type ScriptFile {
+	path: String!
+}
+
+type ScriptResult {
+	success: Boolean!
+	script: Script
+	message: String
+}
+
+input SetPropertyInput {
+	nodePath: String!
+	property: String!
+	value: String!
+}
+
+type SignalConnection {
+	fromNode: String!
+	signal: String!
+	toNode: String!
+	method: String!
+}
+
+type SignalDefinition {
+	name: String!
+	arguments: [String!]!
+}
+
+type SignalInfo {
+	name: String!
+	arguments: [String!]!
+}
+
+input TemplateSceneInput {
+	template: String!
+	path: String!
+}
+
+type Variable {
+	name: String!
+	type: String!
+	defaultValue: String
+}
+
+type Vector2 {
+	x: Float!
+	y: Float!
+}
+
+type Vector3 {
+	x: Float!
+	y: Float!
+	z: Float!
+}
+
+"""
+Directs the executor to include this field or fragment only when the `if` argument is true.
+"""
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Directs the executor to skip this field or fragment when the `if` argument is true.
+"""
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+schema {
+	query: QueryRoot
+	mutation: MutationRoot
+}

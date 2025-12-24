@@ -1,0 +1,566 @@
+"""
+Godot Query Language (GQL) - Schema (Single Source of Truth)
+
+- This SDL is the canonical contract for GQL.
+- `docs/DESIGN_GQL.md` explains the WHY/WHAT and links here for the exact schema.
+"""
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+"""
+Arbitrary JSON value.
+Used for flexible operation args and future-proof extension points.
+"""
+scalar JSON
+
+"""
+======================
+Query (Read operations)
+======================
+"""
+type Query {
+  """プロジェクト全体の情報を取得"""
+  project: Project!
+
+  """シーンファイルの内容を取得"""
+  scene(path: String!): Scene
+
+  """スクリプトファイルの内容を取得"""
+  script(path: String!): Script
+
+  """エディター上の現在のシーンを取得（live操作）"""
+  currentScene: LiveScene
+
+  """ノードの詳細情報を取得（live操作）"""
+  node(path: String!): LiveNode
+
+  """Godotノード型の情報を取得（型メタデータ）"""
+  nodeTypeInfo(typeName: String!): NodeTypeInfo
+
+  """
+  エントリーポイントから関連情報を一括収集（index-chan inspired）
+  """
+  gatherContext(input: GatherContextInput!): GatheredContext!
+
+  """プロジェクトの依存関係グラフを取得"""
+  dependencyGraph(input: DependencyGraphInput): DependencyGraph!
+}
+
+"""
+=========================
+Mutation (Write operations)
+=========================
+"""
+type Mutation {
+  # ========== ファイルベース操作 ==========
+  createScene(input: CreateSceneInput!): SceneResult!
+  createSceneFromTemplate(input: TemplateSceneInput!): SceneResult!
+  createScript(input: CreateScriptInput!): ScriptResult!
+
+  # ========== ライブ操作（エディター連携） ==========
+  addNode(input: AddNodeInput!): NodeResult!
+  removeNode(path: String!): OperationResult!
+  duplicateNode(path: String!): NodeResult!
+  reparentNode(path: String!, newParent: String!): NodeResult!
+  setProperty(input: SetPropertyInput!): OperationResult!
+  setProperties(nodePath: String!, properties: [PropertyInput!]!): OperationResult!
+  connectSignal(input: ConnectSignalInput!): OperationResult!
+  disconnectSignal(input: DisconnectSignalInput!): OperationResult!
+  addToGroup(nodePath: String!, group: String!): OperationResult!
+  removeFromGroup(nodePath: String!, group: String!): OperationResult!
+  saveScene: OperationResult!
+  openScene(path: String!): OperationResult!
+
+  # ========== バッチ / 安全な変更フロー ==========
+  """
+  変更を事前検証（ドライラン）
+  - ノードパスの存在確認
+  - プロパティ名の妥当性確認
+  - 型の互換性チェック
+  """
+  validateMutation(input: MutationPlanInput!): MutationValidationResult!
+
+  """
+  変更のプレビュー（差分表示）
+  - 変更前後の差分をテキストで表示
+  - 影響を受けるファイル一覧
+  """
+  previewMutation(input: MutationPlanInput!): PreviewResult!
+
+  """
+  検証済みの変更を適用
+  - オプションでバックアップ作成
+  - Undo/Redo対応（実装方針）
+  """
+  applyMutation(input: ApplyMutationInput!): ApplyResult!
+}
+
+"""
+==========
+Core Types
+==========
+"""
+type Project {
+  name: String!
+  path: String!
+  scenes: [SceneFile!]!
+  scripts: [ScriptFile!]!
+  stats: ProjectStats!
+
+  """
+  プロジェクト全体の静的検証（ファイル・構文・参照など）
+  NOTE: Mutation検証とは別型（名前衝突を避ける）
+  """
+  validation: ProjectValidationResult!
+}
+
+type Scene {
+  path: String!
+  root: SceneNode!
+  allNodes: [SceneNode!]!
+  externalResources: [ExternalResource!]!
+}
+
+type SceneNode {
+  name: String!
+  type: String!
+  path: String!
+  properties: [Property!]!
+  property(name: String!): Property
+  children: [SceneNode!]!
+  script: Script
+  groups: [String!]!
+  signals: [SignalConnection!]!
+}
+
+type LiveScene {
+  path: String
+  root: LiveNode!
+  selectedNodes: [LiveNode!]!
+}
+
+type LiveNode {
+  name: String!
+  type: String!
+  path: String!
+  globalPosition: Vector3
+  globalPosition2D: Vector2
+  properties: [Property!]!
+  children: [LiveNode!]!
+  availableSignals: [SignalInfo!]!
+  connectedSignals: [SignalConnection!]!
+}
+
+type Script {
+  path: String!
+  extends: String!
+  className: String
+  functions: [Function!]!
+  variables: [Variable!]!
+  signals: [SignalDefinition!]!
+  exports: [Variable!]!
+}
+
+"""
+====================
+File & Project Types
+====================
+"""
+type SceneFile {
+  path: String!
+}
+
+type ScriptFile {
+  path: String!
+}
+
+type ProjectStats {
+  sceneCount: Int!
+  scriptCount: Int!
+  resourceCount: Int!
+}
+
+"""
+================
+Property / Values
+================
+NOTE:
+- Current design uses `value: String` (GDScript-like textual form).
+- In the future, consider a typed VariantInput/VariantValue.
+"""
+type Property {
+  name: String!
+  value: String!
+  type: String
+}
+
+input PropertyInput {
+  name: String!
+  value: String!
+}
+
+"""
+=============
+Vector helpers
+=============
+"""
+type Vector2 {
+  x: Float!
+  y: Float!
+}
+
+type Vector3 {
+  x: Float!
+  y: Float!
+  z: Float!
+}
+
+"""
+===============
+Signals / Scripts
+===============
+"""
+type Function {
+  name: String!
+  arguments: [String!]!
+}
+
+type Variable {
+  name: String!
+  type: String!
+  defaultValue: String
+}
+
+type SignalDefinition {
+  name: String!
+  arguments: [String!]!
+}
+
+type SignalInfo {
+  name: String!
+  arguments: [String!]!
+}
+
+type SignalConnection {
+  fromNode: String!
+  signal: String!
+  toNode: String!
+  method: String!
+}
+
+type ExternalResource {
+  id: Int!
+  type: String!
+  path: String!
+}
+
+"""
+======================
+Node Type Metadata (WIP)
+======================
+"""
+type NodeTypeInfo {
+  typeName: String!
+  properties: [NodePropertyInfo!]!
+  signals: [SignalInfo!]!
+}
+
+type NodePropertyInfo {
+  name: String!
+  type: String!
+  hint: String
+}
+
+"""
+====================
+Mutations: Inputs/Out
+====================
+"""
+input AddNodeInput {
+  parent: String!
+  name: String!
+  type: String!
+  properties: [PropertyInput!]
+  groups: [String!]
+}
+
+input SetPropertyInput {
+  nodePath: String!
+  property: String!
+  """値（GDScript形式の文字列）"""
+  value: String!
+}
+
+input ConnectSignalInput {
+  fromNode: String!
+  signal: String!
+  toNode: String!
+  method: String!
+}
+
+type OperationResult {
+  success: Boolean!
+  message: String
+}
+
+type NodeResult {
+  success: Boolean!
+  node: LiveNode
+  message: String
+}
+
+type SceneResult {
+  success: Boolean!
+  scene: Scene
+  message: String
+}
+
+type ScriptResult {
+  success: Boolean!
+  script: Script
+  message: String
+}
+
+"""
+File-based inputs (placeholders / WIP)
+"""
+input CreateSceneInput {
+  path: String!
+  rootName: String!
+  rootType: String!
+}
+
+input TemplateSceneInput {
+  template: String!
+  path: String!
+}
+
+input CreateScriptInput {
+  path: String!
+  extends: String!
+  className: String
+}
+
+"""
+========================================
+Safe change flow (validate/preview/apply)
+========================================
+"""
+input MutationPlanInput {
+  operations: [PlannedOperation!]!
+}
+
+input PlannedOperation {
+  type: OperationType!
+  args: JSON!
+}
+
+enum OperationType {
+  ADD_NODE
+  REMOVE_NODE
+  SET_PROPERTY
+  SET_PROPERTIES
+  CONNECT_SIGNAL
+  DISCONNECT_SIGNAL
+  ADD_TO_GROUP
+  REMOVE_FROM_GROUP
+  REPARENT_NODE
+  DUPLICATE_NODE
+  CREATE_SCRIPT
+  ATTACH_SCRIPT
+}
+
+type MutationValidationResult {
+  isValid: Boolean!
+  errors: [MutationValidationError!]!
+  warnings: [MutationValidationWarning!]!
+  validationTimeMs: Int!
+}
+
+type MutationValidationError {
+  operationIndex: Int!
+  code: String!
+  message: String!
+  suggestion: String
+}
+
+type MutationValidationWarning {
+  operationIndex: Int!
+  message: String!
+}
+
+type PreviewResult {
+  success: Boolean!
+  diff: String!
+  affectedFiles: [AffectedFile!]!
+  summary: ChangeSummary!
+}
+
+type AffectedFile {
+  path: String!
+  changeType: FileChangeType!
+}
+
+enum FileChangeType {
+  CREATED
+  MODIFIED
+  DELETED
+}
+
+type ChangeSummary {
+  nodesAdded: Int!
+  nodesRemoved: Int!
+  propertiesChanged: Int!
+  signalsConnected: Int!
+}
+
+input ApplyMutationInput {
+  operations: [PlannedOperation!]!
+  createBackup: Boolean
+  backupDescription: String
+}
+
+type ApplyResult {
+  success: Boolean!
+  appliedCount: Int!
+  backupPath: String
+  errors: [ApplyError!]!
+  undoActionId: String
+}
+
+type ApplyError {
+  operationIndex: Int!
+  message: String!
+}
+
+"""
+=========================
+Project validation (static)
+=========================
+"""
+type ProjectValidationResult {
+  isValid: Boolean!
+  errors: [ProjectValidationError!]!
+  warnings: [ProjectValidationWarning!]!
+}
+
+type ProjectValidationError {
+  file: String!
+  line: Int
+  message: String!
+  severity: String
+}
+
+type ProjectValidationWarning {
+  file: String
+  message: String!
+}
+
+"""
+====================
+gatherContext (WIP)
+====================
+"""
+input GatherContextInput {
+  entryPoint: String!
+  depth: Int
+  include: [FileType!]
+}
+
+enum FileType {
+  SCENE
+  SCRIPT
+  RESOURCE
+  SHADER
+}
+
+type GatheredContext {
+  entryPoint: String!
+  main: ContextItem!
+  dependencies: [ContextItem!]!
+  dependents: [ContextItem!]!
+  resources: [ResourceInfo!]!
+  summary: ContextSummary!
+}
+
+type ContextItem {
+  path: String!
+  type: FileType!
+  scene: Scene
+  script: Script
+}
+
+type ResourceInfo {
+  path: String!
+  type: String
+}
+
+type ContextSummary {
+  totalFiles: Int!
+  totalFunctions: Int!
+}
+
+"""
+========================
+dependencyGraph (WIP)
+========================
+"""
+input DependencyGraphInput {
+  directory: String
+  fileTypes: [FileType!]
+  format: GraphFormat
+}
+
+enum GraphFormat {
+  JSON
+  GRAPHML
+  DOT
+  MERMAID
+}
+
+input GraphNodeFilter {
+  isUnused: Boolean
+}
+
+type DependencyGraph {
+  nodes(filter: GraphNodeFilter, limit: Int, offset: Int): [GraphNode!]!
+  edges: [GraphEdge!]!
+  stats: GraphStats!
+  exportedData: String
+}
+
+type GraphNode {
+  id: String!
+  label: String!
+  type: FileType!
+  inDegree: Int!
+  outDegree: Int!
+  isUnused: Boolean!
+}
+
+type GraphEdge {
+  from: String!
+  to: String!
+  referenceType: ReferenceType!
+}
+
+enum ReferenceType {
+  INSTANTIATES
+  ATTACHES_SCRIPT
+  USES_RESOURCE
+  PRELOADS
+  LOADS
+}
+
+type GraphStats {
+  nodeCount: Int!
+  edgeCount: Int!
+  unusedCount: Int!
+  hasCycles: Boolean!
+  cyclePaths: [[String!]!]
+}
+
+

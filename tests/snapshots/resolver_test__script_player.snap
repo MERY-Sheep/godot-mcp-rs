@@ -1,0 +1,32 @@
+---
+source: tests/resolver_test.rs
+expression: data
+---
+{
+  "script": {
+    "exports": [
+      {
+        "name": "speed",
+        "type": "float"
+      },
+      {
+        "name": "jump_velocity",
+        "type": "float"
+      },
+      {
+        "name": "move_speed",
+        "type": "float"
+      }
+    ],
+    "extends": "CharacterBody3D",
+    "functions": [
+      {
+        "name": "_physics_process"
+      },
+      {
+        "name": "move"
+      }
+    ],
+    "path": "res://scripts/player.gd"
+  }
+}

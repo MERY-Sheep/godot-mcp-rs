@@ -1,0 +1,17 @@
+---
+source: tests/mutation_test.rs
+expression: data
+---
+{
+  "validateMutation": {
+    "errors": [
+      {
+        "code": "NODE_NOT_FOUND",
+        "message": "Node not found: TestNode",
+        "operationIndex": 1
+      }
+    ],
+    "isValid": false,
+    "warnings": []
+  }
+}

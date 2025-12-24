@@ -1,0 +1,14 @@
+---
+source: tests/resolver_test.rs
+expression: data
+---
+{
+  "project": {
+    "name": "TestProject",
+    "stats": {
+      "resourceCount": 0,
+      "sceneCount": 3,
+      "scriptCount": 3
+    }
+  }
+}

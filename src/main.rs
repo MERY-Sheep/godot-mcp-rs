@@ -4,9 +4,10 @@
 //! Tools can be executed directly in CLI mode.
 
 mod cli;
-mod godot;
 mod server;
-pub mod tools;
+
+// Re-export from lib for internal use
+use godot_mcp_rs::{godot, graphql, tools};
 
 use anyhow::Result;
 use clap::Parser;
@@ -16,6 +17,13 @@ use cli::{Cli, Commands};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // #region agent log
+    let log_path = ".cursor/debug.log";
+    let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
+        use std::io::Write;
+        writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"D\",\"location\":\"main.rs:main:entry\",\"message\":\"main entry\",\"data\":{{}},\"timestamp\":{}}}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
+    });
+    // #endregion
     // Initialize logging (output to stderr, stdout is reserved for MCP communication)
     tracing_subscriber::registry()
         .with(
@@ -27,13 +35,39 @@ async fn main() -> Result<()> {
 
     // Parse command line arguments
     let args: Vec<String> = std::env::args().collect();
+    // #region agent log
+    let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
+        use std::io::Write;
+        writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"D\",\"location\":\"main.rs:main:args_parsed\",\"message\":\"args parsed\",\"data\":{{\"args_len\":{}}},\"timestamp\":{}}}", args.len(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
+    });
+    // #endregion
 
     // If no arguments or "serve" command, start in MCP server mode.
     if args.len() == 1 {
+        // #region agent log
+        let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
+            use std::io::Write;
+            writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"D\",\"location\":\"main.rs:main:mcp_mode\",\"message\":\"starting MCP mode\",\"data\":{{}},\"timestamp\":{}}}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
+        });
+        // #endregion
         tracing::info!("Godot MCP Server starting (MCP mode)...");
-        server::run().await?;
+        server::run().await.map_err(|e| {
+            // #region agent log
+            let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
+                use std::io::Write;
+                writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"D\",\"location\":\"main.rs:main:server_error\",\"message\":\"server run error\",\"data\":{{\"error\":\"{}\"}},\"timestamp\":{}}}", e, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
+            });
+            // #endregion
+            e
+        })?;
     } else {
         // CLI mode
+        // #region agent log
+        let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
+            use std::io::Write;
+            writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"D\",\"location\":\"main.rs:main:cli_mode\",\"message\":\"starting CLI mode\",\"data\":{{}},\"timestamp\":{}}}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
+        });
+        // #endregion
         let cli = Cli::parse();
         match cli.command {
             Commands::Serve => {
