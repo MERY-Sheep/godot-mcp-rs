@@ -5,11 +5,106 @@
 
 use async_graphql::{Enum, InputObject, Object, SimpleObject};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // ======================
 // Scalar types
 // ======================
 // JSON scalar is handled by async-graphql's Json<T>
+
+// ======================
+// Structured Error Types (Phase 1)
+// ======================
+
+/// Error category for AI-friendly error handling
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Serialize, Deserialize)]
+pub enum GqlErrorCategory {
+    /// Connection errors (Godot plugin communication)
+    Connection,
+    /// Validation errors (input validation)
+    Validation,
+    /// Godot runtime errors
+    Godot,
+    /// File system errors
+    FileSystem,
+    /// Schema/Query errors
+    Schema,
+}
+
+/// Error location information
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize, Default)]
+pub struct GqlErrorLocation {
+    /// File path (res:// or file://)
+    pub file: Option<String>,
+    /// Line number (1-indexed)
+    pub line: Option<i32>,
+    /// Column number (1-indexed)
+    pub column: Option<i32>,
+}
+
+/// Stack frame for error traces
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize)]
+pub struct GqlErrorStackFrame {
+    /// Function or method name
+    pub function: String,
+    /// File path
+    pub file: Option<String>,
+    /// Line number
+    pub line: Option<i32>,
+}
+
+/// AI-friendly structured error with context for self-repair
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize)]
+pub struct GqlStructuredError {
+    /// Error code (e.g., "CONN_TIMEOUT", "VALIDATION_NODE_NOT_FOUND")
+    pub code: String,
+    /// Error category for grouping
+    pub category: GqlErrorCategory,
+    /// Human-readable error message
+    pub message: String,
+    /// Location where error occurred
+    pub location: Option<GqlErrorLocation>,
+    /// Stack trace for debugging
+    pub stack_trace: Vec<GqlErrorStackFrame>,
+    /// Suggested fix for AI agent
+    pub suggestion: Option<String>,
+    /// Related documentation URL
+    pub help_url: Option<String>,
+    /// Additional context as JSON
+    pub context: Option<async_graphql::Json<HashMap<String, String>>>,
+}
+
+impl GqlStructuredError {
+    /// Create a new structured error
+    pub fn new(
+        code: impl Into<String>,
+        category: GqlErrorCategory,
+        message: impl Into<String>,
+    ) -> Self {
+        Self {
+            code: code.into(),
+            category,
+            message: message.into(),
+            location: None,
+            stack_trace: vec![],
+            suggestion: None,
+            help_url: None,
+            context: None,
+        }
+    }
+
+    /// Add a suggestion for fixing the error
+    pub fn with_suggestion(mut self, suggestion: impl Into<String>) -> Self {
+        self.suggestion = Some(suggestion.into());
+        self
+    }
+
+    /// Add context key-value pairs
+    pub fn with_context(mut self, ctx: HashMap<String, String>) -> Self {
+        self.context = Some(async_graphql::Json(ctx));
+        self
+    }
+}
 
 // ======================
 // Core Types
@@ -389,6 +484,42 @@ pub struct DisconnectSignalInput {
 pub struct OperationResult {
     pub success: bool,
     pub message: Option<String>,
+    /// Structured error for AI-friendly error handling
+    pub error: Option<GqlStructuredError>,
+}
+
+impl OperationResult {
+    /// Create a success result
+    pub fn ok() -> Self {
+        Self {
+            success: true,
+            message: None,
+            error: None,
+        }
+    }
+
+    /// Create a failure result with structured error
+    pub fn err(error: GqlStructuredError) -> Self {
+        Self {
+            success: false,
+            message: Some(error.message.clone()),
+            error: Some(error),
+        }
+    }
+
+    /// Create a failure result with just a message (legacy)
+    pub fn err_msg(message: impl Into<String>) -> Self {
+        let msg = message.into();
+        Self {
+            success: false,
+            message: Some(msg.clone()),
+            error: Some(GqlStructuredError::new(
+                "UNKNOWN_ERROR",
+                GqlErrorCategory::Godot,
+                msg,
+            )),
+        }
+    }
 }
 
 #[derive(Debug, Clone, SimpleObject)]
@@ -396,6 +527,30 @@ pub struct NodeResult {
     pub success: bool,
     pub node: Option<LiveNode>,
     pub message: Option<String>,
+    /// Structured error for AI-friendly error handling
+    pub error: Option<GqlStructuredError>,
+}
+
+impl NodeResult {
+    /// Create a success result with node
+    pub fn ok(node: LiveNode) -> Self {
+        Self {
+            success: true,
+            node: Some(node),
+            message: None,
+            error: None,
+        }
+    }
+
+    /// Create a failure result with structured error
+    pub fn err(error: GqlStructuredError) -> Self {
+        Self {
+            success: false,
+            node: None,
+            message: Some(error.message.clone()),
+            error: Some(error),
+        }
+    }
 }
 
 #[derive(Debug, Clone, SimpleObject)]
@@ -808,4 +963,231 @@ pub struct BreakpointInput {
     pub path: String,
     pub line: i32,
     pub enabled: Option<bool>,
+}
+
+// ======================
+// Phase 3: Code Understanding Types
+// ======================
+
+/// Class hierarchy information
+#[derive(Debug, Clone, SimpleObject)]
+pub struct ClassHierarchy {
+    pub script_path: String,
+    pub class_name: Option<String>,
+    pub extends_chain: Vec<ClassInfo>,
+    pub depth: i32,
+}
+
+/// Information about a class in the hierarchy
+#[derive(Debug, Clone, SimpleObject)]
+pub struct ClassInfo {
+    pub name: String,
+    pub script_path: Option<String>,
+    pub is_builtin: bool,
+}
+
+/// Symbol reference search result
+#[derive(Debug, Clone, SimpleObject)]
+pub struct SymbolReferences {
+    pub symbol: String,
+    pub definition: Option<SymbolLocation>,
+    pub references: Vec<SymbolLocation>,
+    pub total_count: i32,
+}
+
+/// Location of a symbol
+#[derive(Debug, Clone, SimpleObject)]
+pub struct SymbolLocation {
+    pub file: String,
+    pub line: i32,
+    pub column: Option<i32>,
+    pub context: Option<String>,
+}
+
+/// Autoload entry
+#[derive(Debug, Clone, SimpleObject)]
+pub struct AutoloadEntry {
+    pub name: String,
+    pub path: String,
+    pub is_singleton: bool,
+}
+
+/// Autoloads list result
+#[derive(Debug, Clone, SimpleObject)]
+pub struct AutoloadsResult {
+    pub autoloads: Vec<AutoloadEntry>,
+    pub count: i32,
+}
+
+// ======================
+// Phase 3: Refactoring Types
+// ======================
+
+/// Rename symbol input
+#[derive(Debug, Clone, InputObject)]
+pub struct RenameSymbolInput {
+    pub symbol: String,
+    pub new_name: String,
+    pub scope: Option<String>,
+}
+
+/// Rename symbol result
+#[derive(Debug, Clone, SimpleObject)]
+pub struct RenameSymbolResult {
+    pub success: bool,
+    pub old_name: String,
+    pub new_name: String,
+    pub files_changed: Vec<FileChange>,
+    pub occurrences_replaced: i32,
+    pub message: Option<String>,
+}
+
+/// File change detail
+#[derive(Debug, Clone, SimpleObject)]
+pub struct FileChange {
+    pub path: String,
+    pub changes_count: i32,
+}
+
+/// Extract function input
+#[derive(Debug, Clone, InputObject)]
+pub struct ExtractFunctionInput {
+    pub script_path: String,
+    pub start_line: i32,
+    pub end_line: i32,
+    pub function_name: String,
+    pub parameters: Option<Vec<String>>,
+}
+
+/// Extract function result
+#[derive(Debug, Clone, SimpleObject)]
+pub struct ExtractFunctionResult {
+    pub success: bool,
+    pub function_name: String,
+    pub script_path: String,
+    pub message: Option<String>,
+}
+
+/// Move node to scene input
+#[derive(Debug, Clone, InputObject)]
+pub struct MoveNodeToSceneInput {
+    pub node_path: String,
+    pub new_scene_path: String,
+    pub keep_instance: Option<bool>,
+}
+
+/// Move node to scene result
+#[derive(Debug, Clone, SimpleObject)]
+pub struct MoveNodeToSceneResult {
+    pub success: bool,
+    pub new_scene_path: String,
+    pub instance_path: Option<String>,
+    pub message: Option<String>,
+}
+
+// ======================
+// Phase 3: Code Generation Types
+// ======================
+
+/// Generate input handler input
+#[derive(Debug, Clone, InputObject)]
+pub struct GenerateInputHandlerInput {
+    pub script_path: String,
+    pub actions: Vec<String>,
+    pub handler_type: Option<InputHandlerType>,
+}
+
+/// Input handler type
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
+pub enum InputHandlerType {
+    Process,
+    PhysicsProcess,
+    UnhandledInput,
+    Input,
+}
+
+/// Generate state machine input
+#[derive(Debug, Clone, InputObject)]
+pub struct GenerateStateMachineInput {
+    pub script_path: String,
+    pub states: Vec<String>,
+    pub initial_state: Option<String>,
+    pub use_enum: Option<bool>,
+}
+
+/// Generate test script input
+#[derive(Debug, Clone, InputObject)]
+pub struct GenerateTestScriptInput {
+    pub target_script: String,
+    pub output_path: Option<String>,
+    pub test_framework: Option<TestFramework>,
+}
+
+/// Test framework
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
+pub enum TestFramework {
+    GdUnit4,
+    Gut,
+    Custom,
+}
+
+/// Code generation result
+#[derive(Debug, Clone, SimpleObject)]
+pub struct CodeGenerationResult {
+    pub success: bool,
+    pub path: String,
+    pub message: Option<String>,
+}
+
+// ======================
+// Phase 3: Shader Types
+// ======================
+
+/// Validate shader input
+#[derive(Debug, Clone, InputObject)]
+pub struct ValidateShaderInput {
+    pub shader_code: String,
+    pub shader_type: Option<ShaderType>,
+}
+
+/// Shader type
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
+pub enum ShaderType {
+    Spatial,
+    CanvasItem,
+    Particles,
+    Sky,
+    Fog,
+}
+
+/// Shader validation result
+#[derive(Debug, Clone, SimpleObject)]
+pub struct ShaderValidationResult {
+    pub is_valid: bool,
+    pub errors: Vec<ShaderError>,
+    pub warnings: Vec<ShaderWarning>,
+}
+
+/// Shader error
+#[derive(Debug, Clone, SimpleObject)]
+pub struct ShaderError {
+    pub line: Option<i32>,
+    pub column: Option<i32>,
+    pub message: String,
+}
+
+/// Shader warning
+#[derive(Debug, Clone, SimpleObject)]
+pub struct ShaderWarning {
+    pub line: Option<i32>,
+    pub message: String,
+}
+
+/// Visual shader node input
+#[derive(Debug, Clone, InputObject)]
+pub struct CreateVisualShaderNodeInput {
+    pub shader_path: String,
+    pub node_type: String,
+    pub position_x: Option<f64>,
+    pub position_y: Option<f64>,
 }

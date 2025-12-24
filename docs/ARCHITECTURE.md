@@ -30,10 +30,12 @@ flowchart TB
             TSCN["TSCN Parser"]
             GD["GDScript Parser"]
         end
+
+        WS["WebSocket Client<br/>(src/ws/)"]
     end
 
     subgraph GodotEditor["Godot Editor (Runtime)"]
-        Plugin["Godot MCP Plugin<br/>(TCP Server)"]
+        Plugin["Godot MCP Plugin<br/>(HTTP :6060 / WS :6061)"]
         EditorCore["EditorInterface API"]
         History["Undo/Redo Manager"]
     end
@@ -46,9 +48,10 @@ flowchart TB
     MCP <--> Handler
     Handler --> Tools
     Tools --> Parsers
+    Tools --> WS
 
-    %% Live Flow
-    Tools <-->|"HTTP/JSON"| Plugin
+    %% Live Flow (WebSocket優先, HTTPフォールバック)
+    WS <-->|"WebSocket / HTTP"| Plugin
     Plugin <--> EditorCore
     EditorCore --> History
 
@@ -71,8 +74,9 @@ flowchart TB
 
 ### 1. リアルタイム・レイヤー (`live-*` コマンド)
 
-Rust CLI から Godot エディター内のプラグインに対して HTTP/JSON リクエストを送信します。
+Rust から Godot エディター内のプラグインに対して **WebSocket** (ポート 6061) または **HTTP** (ポート 6060、フォールバック) でリクエストを送信します。
 
+- **WebSocket 優先**: 低遅延・双方向通信。接続失敗時は HTTP にフォールバック。
 - **Undo/Redo 統合**: `EditorUndoRedoManager` を使用することで、AI による変更を人間の操作と同様に扱えます。
 - **同期実行**: インメモリーで処理されるため、ファイルの保存を待たずに即座に変更が反映されます。
 

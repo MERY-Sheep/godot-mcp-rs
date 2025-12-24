@@ -94,6 +94,31 @@ impl std::fmt::Display for LiveError {
     }
 }
 
+impl LiveError {
+    /// Convert to GqlStructuredError for GraphQL responses
+    pub fn to_structured_error(&self) -> GqlStructuredError {
+        match self {
+            LiveError::Connection(msg) => {
+                GqlStructuredError::new("CONN_REFUSED", GqlErrorCategory::Connection, msg.clone())
+                    .with_suggestion(
+                        "Godotエディターを起動し、MCPプラグインが有効か確認してください",
+                    )
+            }
+            LiveError::Timeout => GqlStructuredError::new(
+                "CONN_TIMEOUT",
+                GqlErrorCategory::Connection,
+                "Request to Godot editor timed out",
+            )
+            .with_suggestion("Godotエディターが応答しているか確認してください"),
+            LiveError::HttpError { status, message } => GqlStructuredError::new(
+                "GODOT_HTTP_ERROR",
+                GqlErrorCategory::Godot,
+                format!("HTTP error ({}): {}", status, message),
+            ),
+        }
+    }
+}
+
 // ======================
 // Godot Commands
 // ======================
@@ -210,27 +235,19 @@ pub async fn resolve_add_node(ctx: &GqlContext, input: AddNodeInput) -> NodeResu
                 format!("{}/{}", input.parent, input.name)
             };
 
-            NodeResult {
-                success: true,
-                node: Some(LiveNode {
-                    name: input.name,
-                    r#type: input.node_type,
-                    path: node_path,
-                    global_position: None,
-                    global_position_2d: None,
-                    properties: vec![],
-                    children: vec![],
-                    available_signals: vec![],
-                    connected_signals: vec![],
-                }),
-                message: None,
-            }
+            NodeResult::ok(LiveNode {
+                name: input.name,
+                r#type: input.node_type,
+                path: node_path,
+                global_position: None,
+                global_position_2d: None,
+                properties: vec![],
+                children: vec![],
+                available_signals: vec![],
+                connected_signals: vec![],
+            })
         }
-        Err(e) => NodeResult {
-            success: false,
-            node: None,
-            message: Some(e.to_string()),
-        },
+        Err(e) => NodeResult::err(e.to_structured_error()),
     }
 }
 
@@ -239,14 +256,8 @@ pub async fn resolve_remove_node(ctx: &GqlContext, path: String) -> OperationRes
     let command = GodotLiveCommand::RemoveNode { node_path: path };
 
     match execute_live_command(ctx, command).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 
@@ -261,14 +272,8 @@ pub async fn resolve_set_property(ctx: &GqlContext, input: SetPropertyInput) -> 
     };
 
     match execute_live_command(ctx, command).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 
@@ -285,14 +290,8 @@ pub async fn resolve_connect_signal(
     };
 
     match execute_live_command(ctx, command).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 
@@ -309,14 +308,8 @@ pub async fn resolve_disconnect_signal(
     };
 
     match execute_live_command(ctx, command).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 
@@ -329,14 +322,8 @@ pub async fn resolve_add_to_group(
     let command = GodotLiveCommand::AddToGroup { node_path, group };
 
     match execute_live_command(ctx, command).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 
@@ -349,28 +336,16 @@ pub async fn resolve_remove_from_group(
     let command = GodotLiveCommand::RemoveFromGroup { node_path, group };
 
     match execute_live_command(ctx, command).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 
 /// Resolve saveScene mutation
 pub async fn resolve_save_scene(ctx: &GqlContext) -> OperationResult {
     match execute_live_command(ctx, GodotLiveCommand::SaveScene).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 
@@ -379,14 +354,8 @@ pub async fn resolve_open_scene(ctx: &GqlContext, path: String) -> OperationResu
     let command = GodotLiveCommand::OpenScene { scene_path: path };
 
     match execute_live_command(ctx, command).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 
@@ -453,14 +422,8 @@ pub async fn resolve_remove_breakpoint(
 
 async fn execute_simple_command(ctx: &GqlContext, command: GodotLiveCommand) -> OperationResult {
     match execute_live_command(ctx, command).await {
-        Ok(_) => OperationResult {
-            success: true,
-            message: None,
-        },
-        Err(e) => OperationResult {
-            success: false,
-            message: Some(e.to_string()),
-        },
+        Ok(_) => OperationResult::ok(),
+        Err(e) => OperationResult::err(e.to_structured_error()),
     }
 }
 

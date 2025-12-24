@@ -34,6 +34,12 @@ type ApplyResult {
 	undoActionId: String
 }
 
+input BreakpointInput {
+	path: String!
+	line: Int!
+	enabled: Boolean
+}
+
 type ChangeSummary {
 	nodesAdded: Int!
 	nodesRemoved: Int!
@@ -70,6 +76,12 @@ input CreateScriptInput {
 	path: String!
 	extends: String!
 	className: String
+}
+
+type DebuggerError {
+	message: String!
+	stackInfo: [StackFrame!]!
+	timestamp: String
 }
 
 type DependencyGraph {
@@ -131,6 +143,112 @@ type GatheredContext {
 	summary: ContextSummary!
 }
 
+type GodotObject {
+	id: String!
+	class: String!
+	properties: [Property!]!
+}
+
+"""
+Error category for AI-friendly error handling
+"""
+enum GqlErrorCategory {
+	"""
+	Connection errors (Godot plugin communication)
+	"""
+	CONNECTION
+	"""
+	Validation errors (input validation)
+	"""
+	VALIDATION
+	"""
+	Godot runtime errors
+	"""
+	GODOT
+	"""
+	File system errors
+	"""
+	FILE_SYSTEM
+	"""
+	Schema/Query errors
+	"""
+	SCHEMA
+}
+
+"""
+Error location information
+"""
+type GqlErrorLocation {
+	"""
+	File path (res:// or file://)
+	"""
+	file: String
+	"""
+	Line number (1-indexed)
+	"""
+	line: Int
+	"""
+	Column number (1-indexed)
+	"""
+	column: Int
+}
+
+"""
+Stack frame for error traces
+"""
+type GqlErrorStackFrame {
+	"""
+	Function or method name
+	"""
+	function: String!
+	"""
+	File path
+	"""
+	file: String
+	"""
+	Line number
+	"""
+	line: Int
+}
+
+"""
+AI-friendly structured error with context for self-repair
+"""
+type GqlStructuredError {
+	"""
+	Error code (e.g., "CONN_TIMEOUT", "VALIDATION_NODE_NOT_FOUND")
+	"""
+	code: String!
+	"""
+	Error category for grouping
+	"""
+	category: GqlErrorCategory!
+	"""
+	Human-readable error message
+	"""
+	message: String!
+	"""
+	Location where error occurred
+	"""
+	location: GqlErrorLocation
+	"""
+	Stack trace for debugging
+	"""
+	stackTrace: [GqlErrorStackFrame!]!
+	"""
+	Suggested fix for AI agent
+	"""
+	suggestion: String
+	"""
+	Related documentation URL
+	"""
+	helpUrl: String
+	"""
+	Additional context as JSON
+	"""
+	context: JSON
+}
+
 type GraphEdge {
 	from: String!
 	to: String!
@@ -188,6 +306,14 @@ type LiveScene {
 	selectedNodes: [LiveNode!]!
 }
 
+type LogEntry {
+	message: String!
+	severity: String!
+	timestamp: String!
+	file: String
+	line: Int
+}
+
 input MutationPlanInput {
 	operations: [PlannedOperation!]!
 }
@@ -208,6 +334,12 @@ type MutationRoot {
 	removeFromGroup(nodePath: String!, group: String!): OperationResult!
 	saveScene: OperationResult!
 	openScene(path: String!): OperationResult!
+	runTests(input: RunTestsInput!): TestExecutionResult!
+	pause: OperationResult!
+	resume: OperationResult!
+	step: OperationResult!
+	setBreakpoint(input: BreakpointInput!): OperationResult!
+	removeBreakpoint(input: BreakpointInput!): OperationResult!
 	validateMutation(input: MutationPlanInput!): MutationValidationResult!
 	previewMutation(input: MutationPlanInput!): PreviewResult!
 	applyMutation(input: ApplyMutationInput!): ApplyResult!
@@ -242,6 +374,10 @@ type NodeResult {
 	success: Boolean!
 	node: LiveNode
 	message: String
+	"""
+	Structured error for AI-friendly error handling
+	"""
+	error: GqlStructuredError
 }
 
 type NodeTypeInfo {
@@ -253,6 +389,10 @@ type NodeTypeInfo {
 type OperationResult {
 	success: Boolean!
 	message: String
+	"""
+	Structured error for AI-friendly error handling
+	"""
+	error: GqlStructuredError
 }
 
 enum OperationType {
@@ -365,6 +505,18 @@ type QueryRoot {
 	Get project dependency graph
 	"""
 	dependencyGraph(input: DependencyGraphInput): DependencyGraph!
+	"""
+	Get debugger errors
+	"""
+	debuggerErrors: [DebuggerError!]!
+	"""
+	Get logs
+	"""
+	logs(limit: Int): [LogEntry!]!
+	"""
+	Get object by ID
+	"""
+	objectById(objectId: String!): GodotObject
 }
 
 enum ReferenceType {
@@ -378,6 +530,11 @@ enum ReferenceType {
 type ResourceInfo {
 	path: String!
 	type: String
+}
+
+input RunTestsInput {
+	testPath: String
+	retries: Int
 }
 
 type Scene {
@@ -458,9 +615,44 @@ type SignalInfo {
 	arguments: [String!]!
 }
 
+type StackFrame {
+	file: String!
+	line: Int!
+	function: String!
+}
+
 input TemplateSceneInput {
 	template: String!
 	path: String!
+}
+
+type TestCaseResult {
+	name: String!
+	success: Boolean!
+	line: Int
+	message: String
+	stackOverflow: Boolean
+}
+
+type TestExecutionResult {
+	success: Boolean!
+	totalCount: Int!
+	passedCount: Int!
+	failedCount: Int!
+	errorCount: Int!
+	skippedCount: Int!
+	durationMs: Int!
+	suites: [TestSuiteResult!]!
+}
+
+type TestSuiteResult {
+	name: String!
+	path: String!
+	success: Boolean!
+	passedCount: Int!
+	failedCount: Int!
+	skippedCount: Int!
+	cases: [TestCaseResult!]!
 }
 
 type Variable {

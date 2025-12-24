@@ -76,6 +76,22 @@ type Query {
   オブジェクトＩＤから詳細情報を取得
   """
   objectById(objectId: String!): GodotObject
+
+  # ========== Phase 3: コード理解 ==========
+  """
+  スクリプトのクラス階層を取得
+  """
+  classHierarchy(scriptPath: String!): ClassHierarchy!
+
+  """
+  シンボルの参照を検索
+  """
+  findReferences(symbol: String!, scope: String): SymbolReferences!
+
+  """
+  オートロード一覧を取得
+  """
+  autoloads: AutoloadsResult!
 }
 
 """
@@ -160,6 +176,53 @@ type Mutation {
   - Undo/Redo対応（実装方針）
   """
   applyMutation(input: ApplyMutationInput!): ApplyResult!
+
+  # ========== Phase 3: リファクタリング ==========
+  """
+  シンボル名を変更（プロジェクト横断）
+  """
+  renameSymbol(input: RenameSymbolInput!): RenameSymbolResult!
+
+  """
+  コードブロックを関数に抽出
+  """
+  extractFunction(input: ExtractFunctionInput!): ExtractFunctionResult!
+
+  """
+  ノードを別シーンに移動
+  """
+  moveNodeToScene(input: MoveNodeToSceneInput!): MoveNodeToSceneResult!
+
+  # ========== Phase 3: コード生成 ==========
+  """
+  入力ハンドラーを生成
+  """
+  generateInputHandler(input: GenerateInputHandlerInput!): CodeGenerationResult!
+
+  """
+  ステートマシン雛形を生成
+  """
+  generateStateMachine(input: GenerateStateMachineInput!): CodeGenerationResult!
+
+  """
+  テストスクリプトを生成
+  """
+  generateTestScript(input: GenerateTestScriptInput!): CodeGenerationResult!
+
+  """
+  シェーダーコードを検証 (File-based)
+  """
+  validateShader(input: ValidateShaderInput!): ShaderValidationResult!
+
+  """
+  シェーダーコードを検証 (Live-session)
+  """
+  validateShaderLive(input: ValidateShaderInput!): ShaderValidationResult!
+
+  """
+  ビジュアルシェーダーノードを作成
+  """
+  createVisualShaderNode(input: CreateVisualShaderNodeInput!): OperationResult!
 }
 
 """
@@ -709,4 +772,185 @@ input BreakpointInput {
   path: String!
   line: Int!
   enabled: Boolean
+}
+
+"""
+========================
+Phase 3: Code Understanding
+========================
+"""
+type ClassHierarchy {
+  scriptPath: String!
+  className: String
+  extendsChain: [ClassInfo!]!
+  depth: Int!
+}
+
+type ClassInfo {
+  name: String!
+  scriptPath: String
+  isBuiltin: Boolean!
+}
+
+type SymbolReferences {
+  symbol: String!
+  definition: SymbolLocation
+  references: [SymbolLocation!]!
+  totalCount: Int!
+}
+
+type SymbolLocation {
+  file: String!
+  line: Int!
+  column: Int
+  context: String
+}
+
+type AutoloadEntry {
+  name: String!
+  path: String!
+  isSingleton: Boolean!
+}
+
+type AutoloadsResult {
+  autoloads: [AutoloadEntry!]!
+  count: Int!
+}
+
+"""
+========================
+Phase 3: Refactoring
+========================
+"""
+input RenameSymbolInput {
+  symbol: String!
+  newName: String!
+  scope: String
+}
+
+type RenameSymbolResult {
+  success: Boolean!
+  oldName: String!
+  newName: String!
+  filesChanged: [FileChange!]!
+  occurrencesReplaced: Int!
+  message: String
+}
+
+type FileChange {
+  path: String!
+  changesCount: Int!
+}
+
+input ExtractFunctionInput {
+  scriptPath: String!
+  startLine: Int!
+  endLine: Int!
+  functionName: String!
+  parameters: [String!]
+}
+
+type ExtractFunctionResult {
+  success: Boolean!
+  functionName: String!
+  scriptPath: String!
+  message: String
+}
+
+input MoveNodeToSceneInput {
+  nodePath: String!
+  newScenePath: String!
+  keepInstance: Boolean
+}
+
+type MoveNodeToSceneResult {
+  success: Boolean!
+  newScenePath: String!
+  instancePath: String
+  message: String
+}
+
+"""
+========================
+Phase 3: Code Generation
+========================
+"""
+input GenerateInputHandlerInput {
+  scriptPath: String!
+  actions: [String!]!
+  handlerType: InputHandlerType
+}
+
+enum InputHandlerType {
+  PROCESS
+  PHYSICS_PROCESS
+  UNHANDLED_INPUT
+  INPUT
+}
+
+input GenerateStateMachineInput {
+  scriptPath: String!
+  states: [String!]!
+  initialState: String
+  useEnum: Boolean
+}
+
+input GenerateTestScriptInput {
+  targetScript: String!
+  outputPath: String
+  testFramework: TestFramework
+}
+
+enum TestFramework {
+  GDUNIT4
+  GUT
+  CUSTOM
+}
+
+type CodeGenerationResult {
+  success: Boolean!
+  path: String!
+  message: String
+}
+
+"""
+========================
+Phase 3: Shader Support
+========================
+"""
+input ValidateShaderInput {
+  shaderCode: String!
+  shaderType: ShaderType
+}
+
+enum ShaderType {
+  SPATIAL
+  CANVAS_ITEM
+  PARTICLES
+  SKY
+  FOG
+}
+
+type ShaderValidationResult {
+  isValid: Boolean!
+  errors: [ShaderError!]!
+  warnings: [ShaderWarning!]!
+}
+
+type ShaderError {
+  line: Int
+  column: Int
+  message: String!
+}
+
+type ShaderWarning {
+  line: Int
+  message: String!
+}
+
+input CreateVisualShaderNodeInput {
+  shaderPath: String!
+  nodeType: String!
+  positionX: Float
+  positionY: Float
 }

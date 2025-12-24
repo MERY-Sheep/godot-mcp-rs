@@ -34,8 +34,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 nom = "7"
 regex = "1"
 
-# HTTP Client (for live commands)
+# HTTP Client (for live commands - fallback)
 reqwest = { version = "0.11", features = ["json", "blocking"] }
+
+# WebSocket Client
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
 
 [dev-dependencies]
 tempfile = "3"

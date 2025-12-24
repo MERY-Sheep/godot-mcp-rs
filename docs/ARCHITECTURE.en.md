@@ -30,10 +30,12 @@ flowchart TB
             TSCN["TSCN Parser"]
             GD["GDScript Parser"]
         end
+
+        WS["WebSocket Client<br/>(src/ws/)"]
     end
 
     subgraph GodotEditor["Godot Editor (Runtime)"]
-        Plugin["Godot MCP Plugin<br/>(TCP Server)"]
+        Plugin["Godot MCP Plugin<br/>(HTTP :6060 / WS :6061)"]
         EditorCore["EditorInterface API"]
         History["Undo/Redo Manager"]
     end
@@ -46,9 +48,10 @@ flowchart TB
     MCP <--> Handler
     Handler --> Tools
     Tools --> Parsers
+    Tools --> WS
 
-    %% Live Flow
-    Tools <-->|"HTTP/JSON"| Plugin
+    %% Live Flow (WebSocket preferred, HTTP fallback)
+    WS <-->|"WebSocket / HTTP"| Plugin
     Plugin <--> EditorCore
     EditorCore --> History
 
@@ -71,8 +74,9 @@ flowchart TB
 
 ### 1. Real-time Layer (`live-*` commands)
 
-Sends HTTP/JSON requests from the Rust CLI to the plugin inside the Godot Editor.
+Sends requests from Rust to the plugin inside the Godot Editor via **WebSocket** (port 6061) or **HTTP** (port 6060, fallback).
 
+- **WebSocket preferred**: Low-latency, bidirectional communication. Falls back to HTTP on connection failure.
 - **Undo/Redo Integration**: By using `EditorUndoRedoManager`, changes made by the AI are handled just like human operations.
 - **Synchronous Execution**: Since it's processed in-memory, changes are reflected immediately without waiting for files to be saved.
 

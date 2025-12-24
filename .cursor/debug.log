@@ -1,0 +1,33 @@
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581044787}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":5},"timestamp":1766581044789}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581044789}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581204219}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":7},"timestamp":1766581204220}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581204234}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581242025}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":7},"timestamp":1766581242025}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581242026}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581488164}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":7},"timestamp":1766581488164}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581488165}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581492979}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":7},"timestamp":1766581492979}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581492979}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581507152}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":7},"timestamp":1766581507152}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581507152}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581524239}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":21},"timestamp":1766581524240}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581524240}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581532551}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":7},"timestamp":1766581532551}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581532551}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581553386}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":9},"timestamp":1766581553387}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581553387}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581561846}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":9},"timestamp":1766581561846}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581561846}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:entry","message":"main entry","data":{},"timestamp":1766581567657}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:args_parsed","message":"args parsed","data":{"args_len":7},"timestamp":1766581567658}
+{"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"main.rs:main:cli_mode","message":"starting CLI mode","data":{},"timestamp":1766581567658}

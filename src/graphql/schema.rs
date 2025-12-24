@@ -131,20 +131,26 @@ impl MutationRoot {
 
     async fn duplicate_node(&self, _path: String) -> NodeResult {
         // TODO: Implement resolver (Phase 4)
-        NodeResult {
-            success: false,
-            node: None,
-            message: Some("Not implemented".to_string()),
-        }
+        NodeResult::err(
+            GqlStructuredError::new(
+                "NOT_IMPLEMENTED",
+                GqlErrorCategory::Schema,
+                "Not implemented",
+            )
+            .with_suggestion("この機能は Phase 4 で実装予定です"),
+        )
     }
 
     async fn reparent_node(&self, _path: String, _new_parent: String) -> NodeResult {
         // TODO: Implement resolver (Phase 4)
-        NodeResult {
-            success: false,
-            node: None,
-            message: Some("Not implemented".to_string()),
-        }
+        NodeResult::err(
+            GqlStructuredError::new(
+                "NOT_IMPLEMENTED",
+                GqlErrorCategory::Schema,
+                "Not implemented",
+            )
+            .with_suggestion("この機能は Phase 4 で実装予定です"),
+        )
     }
 
     async fn set_property(&self, ctx: &Context<'_>, input: SetPropertyInput) -> OperationResult {
@@ -171,10 +177,7 @@ impl MutationRoot {
                 return result;
             }
         }
-        OperationResult {
-            success: true,
-            message: None,
-        }
+        OperationResult::ok()
     }
 
     async fn connect_signal(

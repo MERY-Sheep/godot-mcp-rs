@@ -2,13 +2,16 @@
 extends EditorPlugin
 
 ## Godot MCP Plugin
-## Receives HTTP requests from LLM and performs node operations within the editor.
+## Receives HTTP/WebSocket requests from LLM and performs node operations within the editor.
+## - HTTP (port 6060): Legacy support, simple request/response
+## - WebSocket (port 6061): Low-latency bidirectional communication
 
 const PORT = 6060
 const MAX_LOG_LINES = 1000
 
 var tcp_server: TCPServer
 var command_handler: Node
+var websocket_server: Node
 var debugger_plugin: EditorDebuggerPlugin
 var log_buffer: Array = []
 
@@ -24,23 +27,32 @@ func _enter_tree():
 	command_handler.plugin = self
 	add_child(command_handler)
 	
-	# Start TCP server
+	# Start WebSocket server (port 6061)
+	var ws_script = load("res://addons/godot_mcp/websocket_server.gd")
+	websocket_server = ws_script.new()
+	websocket_server.command_handler = command_handler
+	websocket_server.plugin = self
+	add_child(websocket_server)
+	
+	# Start TCP server (HTTP fallback, port 6060)
 	tcp_server = TCPServer.new()
 	var err = tcp_server.listen(PORT)
 	if err != OK:
 		push_error("Godot MCP: Failed to start TCP server on port %d" % PORT)
 		return
 	
-	print("Godot MCP: Server started on port %d" % PORT)
+	print("Godot MCP: HTTP Server on port %d, WebSocket Server on port 6061" % PORT)
 
 func _exit_tree():
 	if tcp_server:
 		tcp_server.stop()
 	if command_handler:
 		command_handler.queue_free()
+	if websocket_server:
+		websocket_server.queue_free()
 	if debugger_plugin:
 		remove_debugger_plugin(debugger_plugin)
-	print("Godot MCP: Server stopped")
+	print("Godot MCP: Servers stopped")
 
 func _process(_delta):
 	if tcp_server and tcp_server.is_connection_available():

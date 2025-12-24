@@ -5,3 +5,4 @@
 pub mod godot;
 pub mod graphql;
 pub mod tools;
+pub mod ws;
