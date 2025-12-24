@@ -5,6 +5,28 @@
 > While these legacy tools are removed from the MCP server interface, they remain accessible via CLI for debugging and serve as the internal implementation for GQL resolvers.
 > For the new GQL-based workflow, please refer to [MIGRATION_GUIDE.md](gql/MIGRATION_GUIDE.md).
 
+## GraphQL CLI Commands (Recommended)
+
+The latest toolset (GQL) can be executed directly from the CLI. This is recommended over using legacy tools.
+
+### 1. Execute Query (`gql-query`)
+
+```bash
+godot-mcp-rs tool gql-query --project ./path/to/project --query "{ project { name stats { sceneCount } } }"
+```
+
+### 2. Execute Mutation (`gql-mutate`)
+
+```bash
+godot-mcp-rs tool gql-mutate --project ./path/to/project --mutation "mutation { validateMutation(input: { operations: [] }) { isValid } }"
+```
+
+### 3. Get Schema (`gql-introspect`)
+
+```bash
+godot-mcp-rs tool gql-introspect --project ./path/to/project --format SDL
+```
+
 ## Legacy Toolset (Internal Implementation)
 
 ### ✨ Real-time Operations (live-\*)

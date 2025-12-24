@@ -5,6 +5,28 @@
 > 以下の個別ツール群は MCP サーバーからは削除されましたが、CLI モードでのデバッグ用、および GQL リゾルバの内部実装として引き続き利用・参照可能です。
 > 新しい使い方については [MIGRATION_GUIDE.md](gql/MIGRATION_GUIDE.md) を参照してください。
 
+## GraphQL CLI コマンド (推奨)
+
+最新のツールセット（GQL）は CLI からも直接実行可能です。レガシーツールを使用するよりも、こちらの方が推奨されます。
+
+### 1. クエリの実行 (`gql-query`)
+
+```bash
+godot-mcp-rs tool gql-query --project ./path/to/project --query "{ project { name stats { sceneCount } } }"
+```
+
+### 2. ミューテーションの実行 (`gql-mutate`)
+
+```bash
+godot-mcp-rs tool gql-mutate --project ./path/to/project --mutation "mutation { validateMutation(input: { operations: [] }) { isValid } }"
+```
+
+### 3. スキーマの取得 (`gql-introspect`)
+
+```bash
+godot-mcp-rs tool gql-introspect --project ./path/to/project --format SDL
+```
+
 ## ツール一覧 (レガシー/内部実装)
 
 ### ✨ リアルタイム操作 (live-\*)

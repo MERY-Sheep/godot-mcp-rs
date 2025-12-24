@@ -68,6 +68,9 @@ cargo build --release
 MCP サーバーとしてだけでなく、単体の CLI ツールとしても利用可能です。
 
 ```bash
+# GraphQL クエリの実行
+godot-mcp-rs tool gql-query --project ./my_project --query "{ project { name stats { sceneCount } } }"
+
 # リアルタイムでノードを追加
 godot-mcp-rs tool live-add-node --name "Bot" --node-type "CharacterBody3D"
 

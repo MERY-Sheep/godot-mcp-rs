@@ -1,7 +1,7 @@
 //! MCP Tool Definitions - Godot MCP Server
 
 mod editor;
-mod gql_tools;
+pub mod gql_tools;
 mod live;
 mod project;
 mod resource;

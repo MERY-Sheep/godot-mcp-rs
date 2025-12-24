@@ -627,6 +627,40 @@ pub enum ToolCommands {
         #[arg(long)]
         group: String,
     },
+
+    // === GQL Tools ===
+    /// Execute a GraphQL query against the Godot project
+    GqlQuery {
+        #[arg(short, long)]
+        project: PathBuf,
+        /// GraphQL query string
+        #[arg(short, long)]
+        query: String,
+        /// Optional variables as JSON string
+        #[arg(short, long)]
+        variables: Option<String>,
+    },
+
+    /// Execute a GraphQL mutation to modify the Godot project
+    GqlMutate {
+        #[arg(short, long)]
+        project: PathBuf,
+        /// GraphQL mutation string
+        #[arg(short, long)]
+        mutation: String,
+        /// Optional variables as JSON string
+        #[arg(short, long)]
+        variables: Option<String>,
+    },
+
+    /// Get the GraphQL schema (SDL or INTROSPECTION)
+    GqlIntrospect {
+        #[arg(short, long)]
+        project: PathBuf,
+        /// Format: "SDL" (default) or "INTROSPECTION"
+        #[arg(short, long, default_value = "SDL")]
+        format: String,
+    },
 }
 
 /// Execute CLI command
@@ -1354,6 +1388,39 @@ pub async fn run_cli(cmd: ToolCommands) -> anyhow::Result<()> {
         ToolCommands::LiveGetGroupNodes { port, group } => {
             return run_live_command(port, GodotCommand::GetGroupNodes(GroupNameParams { group }))
                 .await;
+        }
+
+        // === GQL Tools ===
+        ToolCommands::GqlQuery {
+            project,
+            query,
+            variables,
+        } => {
+            let mut map = serde_json::Map::new();
+            map.insert("query".to_string(), serde_json::Value::String(query));
+            if let Some(vars_str) = variables {
+                let vars: serde_json::Value = serde_json::from_str(&vars_str)?;
+                map.insert("variables".to_string(), vars);
+            }
+            crate::tools::gql_tools::handle_godot_query(&project, Some(map)).await
+        }
+        ToolCommands::GqlMutate {
+            project,
+            mutation,
+            variables,
+        } => {
+            let mut map = serde_json::Map::new();
+            map.insert("mutation".to_string(), serde_json::Value::String(mutation));
+            if let Some(vars_str) = variables {
+                let vars: serde_json::Value = serde_json::from_str(&vars_str)?;
+                map.insert("variables".to_string(), vars);
+            }
+            crate::tools::gql_tools::handle_godot_mutate(&project, Some(map)).await
+        }
+        ToolCommands::GqlIntrospect { project, format } => {
+            let mut map = serde_json::Map::new();
+            map.insert("format".to_string(), serde_json::Value::String(format));
+            crate::tools::gql_tools::handle_godot_introspect(&project, Some(map)).await
         }
     };
 
