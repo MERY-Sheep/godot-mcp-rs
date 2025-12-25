@@ -24,17 +24,18 @@ It fully supports Undo/Redo, allowing AI-made changes to be reverted from the ed
 
 Currently, the following commands support real-time operations:
 
-| Category       | Command                                                                                           | Undo/Redo |
-| :------------- | :------------------------------------------------------------------------------------------------ | :-------: |
-| **Node**       | `add_node`, `remove_node`, `rename_node`, `duplicate_node`, `reparent_node`, `instantiate_scene`  |    ✅     |
-| **Properties** | `set_property`                                                                                    |    ✅     |
-|                | `get_properties`                                                                                  |     -     |
-| **Scene**      | `get_tree`, `save_scene`                                                                          |     -     |
-| **Signals**    | `connect_signal`, `disconnect_signal`                                                             |    ✅     |
-|                | `list_signals`                                                                                    |     -     |
-| **Animation**  | `create_animation`                                                                                |    ✅     |
-|                | `add_animation_track`, `add_animation_key`, `play_animation`, `stop_animation`, `list_animations` |     -     |
-| **Debug**      | `get_editor_log`, `clear_editor_log`                                                              |     -     |
+| Category          | Command                                                                                           | Undo/Redo |
+| :---------------- | :------------------------------------------------------------------------------------------------ | :-------: |
+| **Node**          | `add_node`, `remove_node`, `rename_node`, `duplicate_node`, `reparent_node`, `instantiate_scene`  |    ✅     |
+| **Properties**    | `set_property`                                                                                    |    ✅     |
+|                   | `get_properties`                                                                                  |     -     |
+| **Scene**         | `get_tree`, `save_scene`                                                                          |     -     |
+| **Signals**       | `connect_signal`, `disconnect_signal`                                                             |    ✅     |
+|                   | `list_signals`                                                                                    |     -     |
+| **Animation**     | `create_animation`                                                                                |    ✅     |
+|                   | `add_animation_track`, `add_animation_key`, `play_animation`, `stop_animation`, `list_animations` |     -     |
+| **Debug**         | `get_editor_log`, `clear_editor_log`, `get_parse_errors`, `get_stack_frame_vars`                  |     -     |
+| **Introspection** | `get_type_info`, `list_all_types`                                                                 |     -     |
 
 ## About Undo/Redo
 
