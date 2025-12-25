@@ -200,6 +200,14 @@ pub enum GodotLiveCommand {
     GetTypeInfo { type_name: String },
     #[serde(rename = "list_all_types")]
     ListAllTypes { parent_class: String },
+
+    // Transaction Commands
+    #[serde(rename = "begin_transaction")]
+    BeginTransaction { name: String },
+    #[serde(rename = "commit_transaction")]
+    CommitTransaction,
+    #[serde(rename = "rollback_transaction")]
+    RollbackTransaction,
 }
 
 // ======================
@@ -477,6 +485,48 @@ pub async fn resolve_stack_frame_vars(
 }
 
 // ======================
+// Phase 3: Refactoring / Shader Live Resolvers
+// ======================
+
+/// Resolve moveNodeToScene mutation - move a node to a new scene file
+pub async fn resolve_move_node_to_scene(
+    _ctx: &GqlContext,
+    input: MoveNodeToSceneInput,
+) -> MoveNodeToSceneResult {
+    // TODO: Implement live communication with Godot plugin
+    // This requires:
+    // 1. Getting the node subtree from the editor
+    // 2. Creating/updating the new scene file
+    // 3. Optionally replacing the node with an instance
+    MoveNodeToSceneResult {
+        success: false,
+        new_scene_path: input.new_scene_path,
+        instance_path: None,
+        message: Some("Not yet implemented - requires Godot plugin support".to_string()),
+    }
+}
+
+/// Resolve validateShaderLive mutation - validate shader in Godot runtime
+pub async fn resolve_validate_shader_live(
+    _ctx: &GqlContext,
+    input: ValidateShaderInput,
+) -> ShaderValidationResult {
+    // TODO: Implement live communication with Godot plugin for runtime shader validation
+    // For now, fall back to the static validator
+    super::shader_resolver::resolve_validate_shader(&input)
+}
+
+/// Resolve createVisualShaderNode mutation - create a node in visual shader
+pub async fn resolve_create_visual_shader_node(
+    _ctx: &GqlContext,
+    _input: CreateVisualShaderNodeInput,
+) -> OperationResult {
+    // TODO: Implement live communication with Godot plugin
+    // This requires sending commands to manipulate VisualShader resources
+    OperationResult::err_msg("Not yet implemented - requires Godot plugin support")
+}
+
+// ======================
 // Helper Functions
 // ======================
 
@@ -593,6 +643,44 @@ fn parse_live_node(value: &Value, path: String) -> Option<LiveNode> {
         available_signals: vec![],
         connected_signals: vec![],
     })
+}
+
+// ======================
+// Transaction Resolvers
+// ======================
+
+/// Begin a transaction - groups subsequent operations into a single Undo action
+pub async fn resolve_begin_transaction(ctx: &GqlContext, name: String) -> TransactionResult {
+    let command = GodotLiveCommand::BeginTransaction { name: name.clone() };
+    match execute_live_command(ctx, command).await {
+        Ok(val) => {
+            let transaction_id = val
+                .get("transaction_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or(&name)
+                .to_string();
+            TransactionResult::ok(transaction_id)
+        }
+        Err(e) => TransactionResult::err(e.to_string()),
+    }
+}
+
+/// Commit the current transaction
+pub async fn resolve_commit_transaction(ctx: &GqlContext) -> TransactionResult {
+    let command = GodotLiveCommand::CommitTransaction;
+    match execute_live_command(ctx, command).await {
+        Ok(_) => TransactionResult::ok_msg("Transaction committed successfully"),
+        Err(e) => TransactionResult::err(e.to_string()),
+    }
+}
+
+/// Rollback the current transaction - discards all changes
+pub async fn resolve_rollback_transaction(ctx: &GqlContext) -> TransactionResult {
+    let command = GodotLiveCommand::RollbackTransaction;
+    match execute_live_command(ctx, command).await {
+        Ok(_) => TransactionResult::ok_msg("Transaction rolled back successfully"),
+        Err(e) => TransactionResult::err(e.to_string()),
+    }
 }
 
 #[cfg(test)]

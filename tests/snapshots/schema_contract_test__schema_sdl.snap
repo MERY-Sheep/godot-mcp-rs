@@ -34,6 +34,23 @@ type ApplyResult {
 	undoActionId: String
 }
 
+"""
+Autoload entry
+"""
+type AutoloadEntry {
+	name: String!
+	path: String!
+	isSingleton: Boolean!
+}
+
+"""
+Autoloads list result
+"""
+type AutoloadsResult {
+	autoloads: [AutoloadEntry!]!
+	count: Int!
+}
+
 input BreakpointInput {
 	path: String!
 	line: Int!
@@ -45,6 +62,34 @@ type ChangeSummary {
 	nodesRemoved: Int!
 	propertiesChanged: Int!
 	signalsConnected: Int!
+}
+
+"""
+Class hierarchy information
+"""
+type ClassHierarchy {
+	scriptPath: String!
+	className: String
+	extendsChain: [ClassInfo!]!
+	depth: Int!
+}
+
+"""
+Information about a class in the hierarchy
+"""
+type ClassInfo {
+	name: String!
+	scriptPath: String
+	isBuiltin: Boolean!
+}
+
+"""
+Code generation result
+"""
+type CodeGenerationResult {
+	success: Boolean!
+	path: String!
+	message: String
 }
 
 input ConnectSignalInput {
@@ -76,6 +121,16 @@ input CreateScriptInput {
 	path: String!
 	extends: String!
 	className: String
+}
+
+"""
+Visual shader node input
+"""
+input CreateVisualShaderNodeInput {
+	shaderPath: String!
+	nodeType: String!
+	positionX: Float
+	positionY: Float
 }
 
 type DebuggerError {
@@ -118,6 +173,35 @@ type ExternalResource {
 	path: String!
 }
 
+"""
+Extract function input
+"""
+input ExtractFunctionInput {
+	scriptPath: String!
+	startLine: Int!
+	endLine: Int!
+	functionName: String!
+	parameters: [String!]
+}
+
+"""
+Extract function result
+"""
+type ExtractFunctionResult {
+	success: Boolean!
+	functionName: String!
+	scriptPath: String!
+	message: String
+}
+
+"""
+File change detail
+"""
+type FileChange {
+	path: String!
+	changesCount: Int!
+}
+
 enum FileChangeType {
 	CREATED
 	MODIFIED
@@ -149,6 +233,34 @@ type GatheredContext {
 	dependents: [ContextItem!]!
 	resources: [ResourceInfo!]!
 	summary: ContextSummary!
+}
+
+"""
+Generate input handler input
+"""
+input GenerateInputHandlerInput {
+	scriptPath: String!
+	actions: [String!]!
+	handlerType: InputHandlerType
+}
+
+"""
+Generate state machine input
+"""
+input GenerateStateMachineInput {
+	scriptPath: String!
+	states: [String!]!
+	initialState: String
+	useEnum: Boolean
+}
+
+"""
+Generate test script input
+"""
+input GenerateTestScriptInput {
+	targetScript: String!
+	outputPath: String
+	testFramework: TestFramework
 }
 
 type GodotObject {
@@ -292,6 +404,16 @@ type GraphStats {
 }
 
 """
+Input handler type
+"""
+enum InputHandlerType {
+	PROCESS
+	PHYSICS_PROCESS
+	UNHANDLED_INPUT
+	INPUT
+}
+
+"""
 A scalar that can represent any JSON value.
 """
 scalar JSON
@@ -320,6 +442,25 @@ type LogEntry {
 	timestamp: String!
 	file: String
 	line: Int
+}
+
+"""
+Move node to scene input
+"""
+input MoveNodeToSceneInput {
+	nodePath: String!
+	newScenePath: String!
+	keepInstance: Boolean
+}
+
+"""
+Move node to scene result
+"""
+type MoveNodeToSceneResult {
+	success: Boolean!
+	newScenePath: String!
+	instancePath: String
+	message: String
 }
 
 input MutationPlanInput {
@@ -351,6 +492,54 @@ type MutationRoot {
 	validateMutation(input: MutationPlanInput!): MutationValidationResult!
 	previewMutation(input: MutationPlanInput!): PreviewResult!
 	applyMutation(input: ApplyMutationInput!): ApplyResult!
+	"""
+	Begin a transaction - groups subsequent operations into a single Undo action
+	"""
+	beginTransaction(name: String!): TransactionResult!
+	"""
+	Commit the current transaction
+	"""
+	commitTransaction: TransactionResult!
+	"""
+	Rollback the current transaction - discards all changes
+	"""
+	rollbackTransaction: TransactionResult!
+	"""
+	Rename a symbol across the project
+	"""
+	renameSymbol(input: RenameSymbolInput!): RenameSymbolResult!
+	"""
+	Extract code block to a new function
+	"""
+	extractFunction(input: ExtractFunctionInput!): ExtractFunctionResult!
+	"""
+	Move node to a new scene
+	"""
+	moveNodeToScene(input: MoveNodeToSceneInput!): MoveNodeToSceneResult!
+	"""
+	Generate input handler code
+	"""
+	generateInputHandler(input: GenerateInputHandlerInput!): CodeGenerationResult!
+	"""
+	Generate state machine boilerplate
+	"""
+	generateStateMachine(input: GenerateStateMachineInput!): CodeGenerationResult!
+	"""
+	Generate test script
+	"""
+	generateTestScript(input: GenerateTestScriptInput!): CodeGenerationResult!
+	"""
+	Validate shader code (file-based)
+	"""
+	validateShader(input: ValidateShaderInput!): ShaderValidationResult!
+	"""
+	Validate shader code (live)
+	"""
+	validateShaderLive(input: ValidateShaderInput!): ShaderValidationResult!
+	"""
+	Create visual shader node
+	"""
+	createVisualShaderNode(input: CreateVisualShaderNodeInput!): OperationResult!
 }
 
 type MutationValidationError {
@@ -543,6 +732,18 @@ type QueryRoot {
 	Get stack frame variables during debugging (live)
 	"""
 	stackFrameVars(frameIndex: Int): [StackVariable!]!
+	"""
+	Get class hierarchy for a script
+	"""
+	classHierarchy(scriptPath: String!): ClassHierarchy!
+	"""
+	Find references to a symbol
+	"""
+	findReferences(symbol: String!, scope: String): SymbolReferences!
+	"""
+	Get autoloads list
+	"""
+	autoloads: AutoloadsResult!
 }
 
 enum ReferenceType {
@@ -551,6 +752,27 @@ enum ReferenceType {
 	USES_RESOURCE
 	PRELOADS
 	LOADS
+}
+
+"""
+Rename symbol input
+"""
+input RenameSymbolInput {
+	symbol: String!
+	newName: String!
+	scope: String
+}
+
+"""
+Rename symbol result
+"""
+type RenameSymbolResult {
+	success: Boolean!
+	oldName: String!
+	newName: String!
+	filesChanged: [FileChange!]!
+	occurrencesReplaced: Int!
+	message: String
 }
 
 type ResourceInfo {
@@ -624,6 +846,43 @@ input SetPropertyInput {
 	value: String!
 }
 
+"""
+Shader error
+"""
+type ShaderError {
+	line: Int
+	column: Int
+	message: String!
+}
+
+"""
+Shader type
+"""
+enum ShaderType {
+	SPATIAL
+	CANVAS_ITEM
+	PARTICLES
+	SKY
+	FOG
+}
+
+"""
+Shader validation result
+"""
+type ShaderValidationResult {
+	isValid: Boolean!
+	errors: [ShaderError!]!
+	warnings: [ShaderWarning!]!
+}
+
+"""
+Shader warning
+"""
+type ShaderWarning {
+	line: Int
+	message: String!
+}
+
 type SignalConnection {
 	fromNode: String!
 	signal: String!
@@ -656,6 +915,26 @@ type StackVariable {
 	type: String!
 }
 
+"""
+Location of a symbol
+"""
+type SymbolLocation {
+	file: String!
+	line: Int!
+	column: Int
+	context: String
+}
+
+"""
+Symbol reference search result
+"""
+type SymbolReferences {
+	symbol: String!
+	definition: SymbolLocation
+	references: [SymbolLocation!]!
+	totalCount: Int!
+}
+
 input TemplateSceneInput {
 	template: String!
 	path: String!
@@ -680,6 +959,15 @@ type TestExecutionResult {
 	suites: [TestSuiteResult!]!
 }
 
+"""
+Test framework
+"""
+enum TestFramework {
+	GD_UNIT_4
+	GUT
+	CUSTOM
+}
+
 type TestSuiteResult {
 	name: String!
 	path: String!
@@ -688,6 +976,26 @@ type TestSuiteResult {
 	failedCount: Int!
 	skippedCount: Int!
 	cases: [TestCaseResult!]!
+}
+
+"""
+Result of a transaction operation (begin, commit, rollback)
+"""
+type TransactionResult {
+	success: Boolean!
+	"""
+	Unique identifier for the transaction
+	"""
+	transactionId: String
+	message: String
+}
+
+"""
+Validate shader input
+"""
+input ValidateShaderInput {
+	shaderCode: String!
+	shaderType: ShaderType
 }
 
 type Variable {

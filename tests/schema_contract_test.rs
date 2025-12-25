@@ -3,8 +3,10 @@
 //! These tests ensure the GraphQL schema remains stable and consistent.
 //! - SDL snapshot test: Detects unintended schema changes
 //! - Query validation tests: Ensures representative queries are type-valid
+//! - Schema sync test: Ensures Rust implementation matches schema.graphql
 
 use godot_mcp_rs::graphql::{build_schema, GqlSchema};
+use std::collections::HashSet;
 
 /// Get the SDL from the built schema
 fn get_schema_sdl() -> String {
@@ -21,6 +23,218 @@ fn get_schema_sdl() -> String {
 fn test_schema_sdl_snapshot() {
     let sdl = get_schema_sdl();
     insta::assert_snapshot!("schema_sdl", sdl);
+}
+
+/// Extract type names from SDL (types, inputs, enums)
+fn extract_type_names(sdl: &str) -> HashSet<String> {
+    let mut types = HashSet::new();
+    let type_pattern = regex::Regex::new(r"(?m)^(?:type|input|enum)\s+(\w+)").unwrap();
+
+    for cap in type_pattern.captures_iter(sdl) {
+        if let Some(name) = cap.get(1) {
+            types.insert(name.as_str().to_string());
+        }
+    }
+    types
+}
+
+/// Extract query/mutation field names from SDL
+fn extract_operations(sdl: &str) -> (HashSet<String>, HashSet<String>) {
+    let mut queries = HashSet::new();
+    let mut mutations = HashSet::new();
+
+    // Parser state
+    let mut in_query = false;
+    let mut in_mutation = false;
+    let mut paren_depth: i32 = 0; // Track parenthesis nesting for multiline args
+
+    // Field definition pattern: starts with field name followed by ( or :
+    // Field names must start with lowercase letter (GraphQL convention)
+    // Examples:
+    //   project: Project!
+    //   scene(path: String!): Scene
+    //   setProperties(
+    let field_start_pattern = regex::Regex::new(r"^\t+([a-z]\w*)\s*[\(:]").unwrap();
+
+    for line in sdl.lines() {
+        let trimmed = line.trim();
+
+        // Match Query/QueryRoot type block (exact match with optional trailing space/brace)
+        if trimmed == "type Query {"
+            || trimmed.starts_with("type Query {")
+            || trimmed == "type QueryRoot {"
+            || trimmed.starts_with("type QueryRoot {")
+        {
+            in_query = true;
+            in_mutation = false;
+            paren_depth = 0;
+            continue;
+        }
+        // Match Mutation/MutationRoot type block (exact match to avoid MutationValidationError etc.)
+        if trimmed == "type Mutation {"
+            || trimmed.starts_with("type Mutation {")
+            || trimmed == "type MutationRoot {"
+            || trimmed.starts_with("type MutationRoot {")
+        {
+            in_mutation = true;
+            in_query = false;
+            paren_depth = 0;
+            continue;
+        }
+        // Any other type/input/enum definition closes current block
+        if trimmed.starts_with("type ")
+            || trimmed.starts_with("input ")
+            || trimmed.starts_with("enum ")
+            || trimmed.starts_with("scalar ")
+        {
+            in_query = false;
+            in_mutation = false;
+            paren_depth = 0;
+            continue;
+        }
+        // Close type block on }
+        if trimmed == "}" && paren_depth == 0 {
+            in_query = false;
+            in_mutation = false;
+            continue;
+        }
+
+        // Track parenthesis depth for multiline argument lists
+        for ch in trimmed.chars() {
+            match ch {
+                '(' => paren_depth += 1,
+                ')' => paren_depth = paren_depth.saturating_sub(1),
+                _ => {}
+            }
+        }
+
+        // Only extract field names when we're at the top level (not inside argument list)
+        // and we're in a Query or Mutation block
+        if (in_query || in_mutation) && paren_depth == 0 {
+            // Skip lines that look like argument definitions (argName: Type)
+            // These don't have leading whitespace pattern matching a field
+            if let Some(cap) = field_start_pattern.captures(line) {
+                if let Some(name) = cap.get(1) {
+                    let field_name = name.as_str().to_string();
+                    if in_query {
+                        queries.insert(field_name);
+                    } else if in_mutation {
+                        mutations.insert(field_name);
+                    }
+                }
+            }
+        }
+        // Also extract field when line contains '(' and ')' on same line (single-line field with args)
+        else if (in_query || in_mutation) && trimmed.contains('(') && paren_depth == 0 {
+            if let Some(cap) = field_start_pattern.captures(line) {
+                if let Some(name) = cap.get(1) {
+                    let field_name = name.as_str().to_string();
+                    if in_query {
+                        queries.insert(field_name);
+                    } else if in_mutation {
+                        mutations.insert(field_name);
+                    }
+                }
+            }
+        }
+    }
+
+    (queries, mutations)
+}
+
+/// Test: Schema matches source of truth (schema.graphql)
+///
+/// This test ensures the Rust implementation matches the schema.graphql file.
+/// If this test fails, it means types or operations defined in schema.graphql
+/// are missing from the Rust implementation.
+#[test]
+fn test_schema_matches_source_of_truth() {
+    // Load schema.graphql (source of truth)
+    let schema_file_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("docs")
+        .join("gql")
+        .join("schema.graphql");
+
+    let source_sdl = std::fs::read_to_string(&schema_file_path)
+        .expect("Failed to read schema.graphql - this file should exist as the source of truth");
+
+    // Get Rust implementation SDL
+    let rust_sdl = get_schema_sdl();
+
+    // Extract types from both
+    let source_types = extract_type_names(&source_sdl);
+    let rust_types = extract_type_names(&rust_sdl);
+
+    // Known type mappings (schema.graphql name -> Rust name)
+    // async-graphql generates different names for root types
+    let type_mappings: HashSet<_> = [
+        "Query",    // -> QueryRoot in async-graphql
+        "Mutation", // -> MutationRoot in async-graphql
+    ]
+    .iter()
+    .map(|s| s.to_string())
+    .collect();
+
+    // Find missing types in Rust implementation (excluding known mappings)
+    let missing_types: Vec<_> = source_types
+        .difference(&rust_types)
+        .filter(|t| !type_mappings.contains(*t))
+        .cloned()
+        .collect();
+
+    // Extract operations
+    let (source_queries, source_mutations) = extract_operations(&source_sdl);
+    let (rust_queries, rust_mutations) = extract_operations(&rust_sdl);
+
+    // Find missing queries
+    let missing_queries: Vec<_> = source_queries.difference(&rust_queries).cloned().collect();
+
+    // Find missing mutations
+    let missing_mutations: Vec<_> = source_mutations
+        .difference(&rust_mutations)
+        .cloned()
+        .collect();
+
+    // Build error message
+    let mut errors = Vec::new();
+
+    if !missing_types.is_empty() {
+        errors.push(format!(
+            "Missing types in Rust implementation ({} types):\n  - {}",
+            missing_types.len(),
+            missing_types.join("\n  - ")
+        ));
+    }
+
+    if !missing_queries.is_empty() {
+        errors.push(format!(
+            "Missing queries in Rust implementation ({} queries):\n  - {}",
+            missing_queries.len(),
+            missing_queries.join("\n  - ")
+        ));
+    }
+
+    if !missing_mutations.is_empty() {
+        errors.push(format!(
+            "Missing mutations in Rust implementation ({} mutations):\n  - {}",
+            missing_mutations.len(),
+            missing_mutations.join("\n  - ")
+        ));
+    }
+
+    if !errors.is_empty() {
+        panic!(
+            "\n\n=== Schema Sync Error ===\n\
+            The Rust implementation does not match schema.graphql (source of truth).\n\n\
+            {}\n\n\
+            To fix this:\n\
+            1. Add missing types to src/graphql/types.rs\n\
+            2. Add missing resolvers to src/graphql/schema.rs\n\
+            3. Run `cargo test test_schema_matches_source_of_truth` to verify\n\
+            ===========================\n",
+            errors.join("\n\n")
+        );
+    }
 }
 
 /// Test: Representative queries are syntactically valid

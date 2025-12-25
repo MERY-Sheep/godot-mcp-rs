@@ -166,6 +166,26 @@ type Mutation {
   removeBreakpoint(input: BreakpointInput!): OperationResult!
 
   # ========== バッチ / 安全な変更フロー ==========
+
+  """
+  トランザクションを開始
+  - 以降の操作を単一のUndo/Redoアクションにグループ化
+  - LLMの1ターンの変更を一括で元に戻せる
+  """
+  beginTransaction(name: String!): TransactionResult!
+
+  """
+  トランザクションをコミット
+  - グループ化された操作を確定
+  """
+  commitTransaction: TransactionResult!
+
+  """
+  トランザクションをロールバック
+  - トランザクション内の変更を破棄
+  """
+  rollbackTransaction: TransactionResult!
+
   """
   変更を事前検証（ドライラン）
   - ノードパスの存在確認

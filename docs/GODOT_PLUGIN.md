@@ -36,6 +36,8 @@ Undo/Redo に完全対応しており、AI による変更をエディターの�
 |                          | `add_animation_track`, `add_animation_key`, `play_animation`, `stop_animation`, `list_animations` |     -     |
 | **デバッグ**             | `get_editor_log`, `clear_editor_log`, `get_parse_errors`, `get_stack_frame_vars`                  |     -     |
 | **イントロスペクション** | `get_type_info`, `list_all_types`                                                                 |     -     |
+| **トランザクション**     | `begin_transaction`, `commit_transaction`, `rollback_transaction`                                 |    ✅     |
+| **シェーダー**           | `create_visual_shader_node`, `validate_shader_live`                                               |     -     |
 
 ## Undo/Redo について
 

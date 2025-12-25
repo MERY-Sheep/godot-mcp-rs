@@ -25,6 +25,7 @@ var _debug_handler
 var _group_handler
 var _shader_handler
 var _introspect_handler
+var _transaction_handler
 
 # Command to handler mapping
 var _command_handlers: Dictionary = {}
@@ -43,6 +44,7 @@ func _load_handlers() -> void:
 	var GroupHandler = load("res://addons/godot_mcp/handlers/group_handler.gd")
 	var ShaderHandler = load("res://addons/godot_mcp/handlers/shader_handler.gd")
 	var IntrospectHandler = load("res://addons/godot_mcp/handlers/introspect_handler.gd")
+	var TransactionHandler = load("res://addons/godot_mcp/handlers/transaction_handler.gd")
 	
 	_node_handler = NodeHandler.new(plugin)
 	_scene_handler = SceneHandler.new(plugin)
@@ -53,6 +55,7 @@ func _load_handlers() -> void:
 	_group_handler = GroupHandler.new(plugin)
 	_shader_handler = ShaderHandler.new(plugin)
 	_introspect_handler = IntrospectHandler.new(plugin)
+	_transaction_handler = TransactionHandler.new(plugin)
 
 func _build_command_map() -> void:
 	# Node operations
@@ -114,6 +117,11 @@ func _build_command_map() -> void:
 	# Introspect operations (Phase 1: Dynamic Type Discovery)
 	_command_handlers["get_type_info"] = _introspect_handler
 	_command_handlers["list_all_types"] = _introspect_handler
+	
+	# Transaction operations (Phase 1: Undo/Redo grouping)
+	_command_handlers["begin_transaction"] = _transaction_handler
+	_command_handlers["commit_transaction"] = _transaction_handler
+	_command_handlers["rollback_transaction"] = _transaction_handler
 
 func handle_command(data: Dictionary) -> Dictionary:
 	var command = data.get("command", "")

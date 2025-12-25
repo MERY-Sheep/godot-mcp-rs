@@ -1,0 +1,98 @@
+﻿cargo :     Finished `test` profile [unoptimized + debuginfo] 
+target(s) in 0.23s
+発生場所 行:1 文字:1
++ cargo test test_schema_matches_source_of_truth -- --nocaptur
+e 2>&1 |  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo          : NotSpecified: (    Finished `t. 
+   ..get(s) in 0.23s:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+     Running unittests src\lib.rs (target\debug\deps\godot_mcp
+_rs-d13727ed6df8af45.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\godot_mc
+p_rs-a0e3592b113b6e32.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\dependency_test.rs (target\debug\deps\depen
+dency_test-ac883fd0ab0f6241.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests\introspect_test.rs (target\debug\deps\intro
+spect_test-60055413e5eef606.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests\live_test.rs (target\debug\deps\live_test-b
+4ca6d295f6e08d3.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests\mutation_test.rs (target\debug\deps\mutatio
+n_test-22ded651ee4098b0.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+     Running tests\resolver_test.rs (target\debug\deps\resolve
+r_test-4d520585d7803924.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests\schema_contract_test.rs (target\debug\deps\
+schema_contract_test-16776eff86f82f5a.exe)
+
+running 1 test
+
+thread 'test_schema_matches_source_of_truth' (2568) panicked a
+t tests\schema_contract_test.rs:166:9:
+
+
+=== Schema Sync Error ===
+The Rust implementation does not match schema.graphql (source 
+of truth).
+
+Missing mutations in Rust implementation (3 mutations):
+  - properties
+  - シェーダーコードを検証
+  - nodePath
+
+To fix this:
+1. Add missing types to src/graphql/types.rs
+2. Add missing resolvers to src/graphql/schema.rs
+3. Run `cargo test test_schema_matches_source_of_truth` to ver
+ify
+===========================
+
+note: run with `RUST_BACKTRACE=1` environment variable to disp
+lay a backtrace
+test test_schema_matches_source_of_truth ... FAILED
+
+failures:
+
+failures:
+    test_schema_matches_source_of_truth
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--test schema_contract_test
+`

@@ -4,10 +4,13 @@
 
 use async_graphql::{Context, EmptySubscription, Object, Schema};
 
+use super::codegen_resolver;
 use super::context::GqlContext;
 use super::dependency_resolver;
 use super::live_resolver;
+use super::refactoring_resolver;
 use super::resolver;
+use super::shader_resolver;
 use super::types::*;
 
 /// GraphQL Query Root
@@ -106,6 +109,31 @@ impl QueryRoot {
     ) -> Vec<StackVariable> {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         live_resolver::resolve_stack_frame_vars(gql_ctx, frame_index).await
+    }
+
+    // ========== Phase 3: Code Understanding ==========
+
+    /// Get class hierarchy for a script
+    async fn class_hierarchy(&self, ctx: &Context<'_>, script_path: String) -> ClassHierarchy {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        refactoring_resolver::resolve_class_hierarchy(gql_ctx, &script_path)
+    }
+
+    /// Find references to a symbol
+    async fn find_references(
+        &self,
+        ctx: &Context<'_>,
+        symbol: String,
+        scope: Option<String>,
+    ) -> SymbolReferences {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        refactoring_resolver::resolve_find_references(gql_ctx, &symbol, scope.as_deref())
+    }
+
+    /// Get autoloads list
+    async fn autoloads(&self, ctx: &Context<'_>) -> AutoloadsResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        refactoring_resolver::resolve_autoloads(gql_ctx)
     }
 }
 
@@ -303,6 +331,117 @@ impl MutationRoot {
     async fn apply_mutation(&self, ctx: &Context<'_>, input: ApplyMutationInput) -> ApplyResult {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         resolver::apply_mutation(gql_ctx, &input)
+    }
+
+    // ========== Transaction operations ==========
+
+    /// Begin a transaction - groups subsequent operations into a single Undo action
+    async fn begin_transaction(&self, ctx: &Context<'_>, name: String) -> TransactionResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_begin_transaction(gql_ctx, name).await
+    }
+
+    /// Commit the current transaction
+    async fn commit_transaction(&self, ctx: &Context<'_>) -> TransactionResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_commit_transaction(gql_ctx).await
+    }
+
+    /// Rollback the current transaction - discards all changes
+    async fn rollback_transaction(&self, ctx: &Context<'_>) -> TransactionResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_rollback_transaction(gql_ctx).await
+    }
+
+    // ========== Phase 3: Refactoring ==========
+
+    /// Rename a symbol across the project
+    async fn rename_symbol(
+        &self,
+        ctx: &Context<'_>,
+        input: RenameSymbolInput,
+    ) -> RenameSymbolResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        refactoring_resolver::resolve_rename_symbol(gql_ctx, &input)
+    }
+
+    /// Extract code block to a new function
+    async fn extract_function(
+        &self,
+        ctx: &Context<'_>,
+        input: ExtractFunctionInput,
+    ) -> ExtractFunctionResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        refactoring_resolver::resolve_extract_function(gql_ctx, &input)
+    }
+
+    /// Move node to a new scene
+    async fn move_node_to_scene(
+        &self,
+        ctx: &Context<'_>,
+        input: MoveNodeToSceneInput,
+    ) -> MoveNodeToSceneResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_move_node_to_scene(gql_ctx, input).await
+    }
+
+    // ========== Phase 3: Code Generation ==========
+
+    /// Generate input handler code
+    async fn generate_input_handler(
+        &self,
+        ctx: &Context<'_>,
+        input: GenerateInputHandlerInput,
+    ) -> CodeGenerationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        codegen_resolver::resolve_generate_input_handler(gql_ctx, &input)
+    }
+
+    /// Generate state machine boilerplate
+    async fn generate_state_machine(
+        &self,
+        ctx: &Context<'_>,
+        input: GenerateStateMachineInput,
+    ) -> CodeGenerationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        codegen_resolver::resolve_generate_state_machine(gql_ctx, &input)
+    }
+
+    /// Generate test script
+    async fn generate_test_script(
+        &self,
+        ctx: &Context<'_>,
+        input: GenerateTestScriptInput,
+    ) -> CodeGenerationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        codegen_resolver::resolve_generate_test_script(gql_ctx, &input)
+    }
+
+    // ========== Phase 3: Shader ==========
+
+    /// Validate shader code (file-based)
+    async fn validate_shader(&self, input: ValidateShaderInput) -> ShaderValidationResult {
+        shader_resolver::resolve_validate_shader(&input)
+    }
+
+    /// Validate shader code (live)
+    async fn validate_shader_live(
+        &self,
+        ctx: &Context<'_>,
+        input: ValidateShaderInput,
+    ) -> ShaderValidationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_validate_shader_live(gql_ctx, input).await
+    }
+
+    /// Create visual shader node
+    async fn create_visual_shader_node(
+        &self,
+        ctx: &Context<'_>,
+        input: CreateVisualShaderNodeInput,
+    ) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_create_visual_shader_node(gql_ctx, input).await
     }
 }
 

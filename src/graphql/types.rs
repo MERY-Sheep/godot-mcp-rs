@@ -522,6 +522,44 @@ impl OperationResult {
     }
 }
 
+/// Result of a transaction operation (begin, commit, rollback)
+#[derive(Debug, Clone, SimpleObject)]
+pub struct TransactionResult {
+    pub success: bool,
+    /// Unique identifier for the transaction
+    pub transaction_id: Option<String>,
+    pub message: Option<String>,
+}
+
+impl TransactionResult {
+    /// Create a success result with transaction ID
+    pub fn ok(transaction_id: impl Into<String>) -> Self {
+        Self {
+            success: true,
+            transaction_id: Some(transaction_id.into()),
+            message: None,
+        }
+    }
+
+    /// Create a success result without transaction ID (for commit/rollback)
+    pub fn ok_msg(message: impl Into<String>) -> Self {
+        Self {
+            success: true,
+            transaction_id: None,
+            message: Some(message.into()),
+        }
+    }
+
+    /// Create a failure result
+    pub fn err(message: impl Into<String>) -> Self {
+        Self {
+            success: false,
+            transaction_id: None,
+            message: Some(message.into()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, SimpleObject)]
 pub struct NodeResult {
     pub success: bool,
