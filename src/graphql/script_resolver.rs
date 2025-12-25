@@ -3,26 +3,20 @@
 //! Handles script parsing, conversion, and creation.
 
 use std::fs;
-use std::path::Path;
 
 use crate::godot::gdscript::GDScript;
+use crate::path_utils;
 
 use super::context::GqlContext;
 use super::types::*;
 
 /// Resolve script from file path
 pub fn resolve_script(ctx: &GqlContext, res_path: &str) -> Option<Script> {
-    let file_path = res_path_to_fs_path(&ctx.project_path, res_path);
+    let file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, res_path);
     let content = fs::read_to_string(&file_path).ok()?;
     let gdscript = GDScript::parse(&content);
 
     Some(convert_gdscript_to_gql(&gdscript, res_path))
-}
-
-/// Convert res:// path to filesystem path
-pub fn res_path_to_fs_path(project_root: &Path, res_path: &str) -> std::path::PathBuf {
-    let relative = res_path.strip_prefix("res://").unwrap_or(res_path);
-    project_root.join(relative)
 }
 
 /// Convert GDScript to GraphQL Script
@@ -95,9 +89,8 @@ pub fn parse_signal_definition(signal_str: &str) -> (String, Vec<String>) {
 pub fn create_script(ctx: &GqlContext, input: &CreateScriptInput) -> ScriptResult {
     let project_path = &ctx.project_path;
 
-    // Convert res:// path to filesystem path
-    let relative_path = input.path.strip_prefix("res://").unwrap_or(&input.path);
-    let file_path = project_path.join(relative_path);
+    // Convert res:// path to filesystem path with validation
+    let file_path = path_utils::to_fs_path_unchecked(project_path, &input.path);
 
     // Check if file already exists
     if file_path.exists() {

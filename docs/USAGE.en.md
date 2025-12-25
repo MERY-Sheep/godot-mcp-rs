@@ -1,8 +1,20 @@
 # Godot MCP Server - Usage Guide
 
-The main operations of this project are integrated into the GraphQL (GQL) interface. While legacy tools remain available via CLI, we recommend using GQL tools for standard MCP use and advanced automation.
+## MCP Public Tools
+
+When using this server as an MCP server (via Claude Desktop / Cursor), only **3 tools** are available:
+
+- `godot_query` - Execute GraphQL queries
+- `godot_mutate` - Execute GraphQL mutations
+- `godot_introspect` - Get GraphQL schema
+
+All operations (adding nodes, creating scenes, etc.) are performed through GraphQL mutations. Use `godot_introspect` to discover available operations.
 
 ## GraphQL CLI Commands (Recommended)
+
+The main operations of this project are integrated into the GraphQL (GQL) interface. While legacy tools remain available via CLI, we recommend using GQL tools for standard MCP use and advanced automation.
+
+The latest toolset (GQL) can be executed directly from the CLI. This is recommended over using legacy tools.
 
 The latest toolset (GQL) can be executed directly from the CLI. This is recommended over using legacy tools.
 

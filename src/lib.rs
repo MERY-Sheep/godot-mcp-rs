@@ -4,5 +4,6 @@
 
 pub mod godot;
 pub mod graphql;
+pub mod path_utils;
 pub mod tools;
 pub mod ws;

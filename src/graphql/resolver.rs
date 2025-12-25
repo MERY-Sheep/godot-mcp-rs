@@ -19,8 +19,8 @@
 
 // Project operations
 pub use super::project_resolver::{
-    collect_project_files, count_resources, parse_project_name, resolve_project, to_res_path,
-    validate_project,
+    collect_project_files, count_resources, parse_project_name, resolve_add_input_action,
+    resolve_project, resolve_set_project_setting, to_res_path, validate_project,
 };
 
 // Scene operations
@@ -28,8 +28,7 @@ pub use super::scene_resolver::{convert_godot_scene_to_gql, create_scene, resolv
 
 // Script operations
 pub use super::script_resolver::{
-    convert_gdscript_to_gql, create_script, parse_signal_definition, res_path_to_fs_path,
-    resolve_script,
+    convert_gdscript_to_gql, create_script, parse_signal_definition, resolve_script,
 };
 
 // Mutation operations

@@ -139,6 +139,17 @@ type Mutation {
   """
   runTests(input: RunTestsInput!): TestExecutionResult!
 
+  # ========== Phase 2.2: プロジェクト設定 & 入力マップ ==========
+  """
+  InputMapにアクションを追加
+  """
+  addInputAction(input: AddInputActionInput!): OperationResult!
+
+  """
+  ProjectSettingsを変更
+  """
+  setProjectSetting(input: SetProjectSettingInput!): OperationResult!
+
   # ========== デバッグ制御 (Phase 2) ==========
   """
   実行を一時停止
@@ -766,6 +777,63 @@ type TestCaseResult {
   line: Int
   message: String
   stackOverflow: Boolean
+}
+
+"""
+========================
+Phase 2.2: Input Action & Project Settings Types
+========================
+"""
+input AddInputActionInput {
+  """
+  アクション名 (例: "jump", "move_left")
+  """
+  actionName: String!
+  """
+  イベントリスト
+  """
+  events: [InputEventInput!]!
+}
+
+input InputEventInput {
+  """
+  イベント種別
+  """
+  type: InputEventType!
+  """
+  キー名 (KEY の場合)
+  """
+  key: String
+  """
+  ボタン番号 (MOUSE_BUTTON / JOY_BUTTON の場合)
+  """
+  button: Int
+  """
+  デバイス番号 (ゲームパッド用)
+  """
+  device: Int
+}
+
+enum InputEventType {
+  KEY
+  MOUSE_BUTTON
+  JOY_BUTTON
+  JOY_AXIS
+}
+
+input SetProjectSettingInput {
+  """
+  設定パス (例: "application/config/name", "display/window/size/width")
+  """
+  path: String!
+  """
+  設定値 (GDScript形式の文字列)
+  """
+  value: String!
+  """
+  値の型ヒント (オプション)
+  """
+  type: String
 }
 
 """

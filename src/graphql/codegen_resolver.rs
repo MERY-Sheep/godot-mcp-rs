@@ -5,9 +5,9 @@
 use std::fs;
 
 use crate::godot::gdscript::GDScript;
+use crate::path_utils;
 
 use super::context::GqlContext;
-use super::script_resolver::res_path_to_fs_path;
 use super::types::*;
 
 /// Generate input handler code
@@ -15,7 +15,7 @@ pub fn resolve_generate_input_handler(
     ctx: &GqlContext,
     input: &GenerateInputHandlerInput,
 ) -> CodeGenerationResult {
-    let file_path = res_path_to_fs_path(&ctx.project_path, &input.script_path);
+    let file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, &input.script_path);
 
     // Read existing script or create new one
     let existing_content = fs::read_to_string(&file_path).unwrap_or_default();
@@ -100,7 +100,7 @@ pub fn resolve_generate_state_machine(
     ctx: &GqlContext,
     input: &GenerateStateMachineInput,
 ) -> CodeGenerationResult {
-    let file_path = res_path_to_fs_path(&ctx.project_path, &input.script_path);
+    let file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, &input.script_path);
 
     let initial_state = input.initial_state.clone().unwrap_or_else(|| {
         input
@@ -267,7 +267,7 @@ pub fn resolve_generate_test_script(
     ctx: &GqlContext,
     input: &GenerateTestScriptInput,
 ) -> CodeGenerationResult {
-    let target_path = res_path_to_fs_path(&ctx.project_path, &input.target_script);
+    let target_path = path_utils::to_fs_path_unchecked(&ctx.project_path, &input.target_script);
 
     // Parse target script
     let content = match fs::read_to_string(&target_path) {
@@ -292,7 +292,7 @@ pub fn resolve_generate_test_script(
         format!("res://tests/test_{}.gd", target_name)
     });
 
-    let test_file_path = res_path_to_fs_path(&ctx.project_path, &output_path);
+    let test_file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, &output_path);
 
     // Generate test script based on framework
     let test_content = match input.test_framework {

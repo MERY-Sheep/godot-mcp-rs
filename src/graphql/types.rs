@@ -630,6 +630,54 @@ pub struct CreateScriptInput {
 }
 
 // ======================
+// Phase 2.2: Input Action & Project Settings
+// ======================
+
+/// Input for adding an input action to the InputMap
+#[derive(Debug, Clone, InputObject)]
+pub struct AddInputActionInput {
+    /// Action name (e.g., "jump", "move_left")
+    pub action_name: String,
+    /// Events to associate with this action
+    pub events: Vec<InputEventInput>,
+}
+
+/// Input event definition
+#[derive(Debug, Clone, InputObject)]
+pub struct InputEventInput {
+    /// Event type
+    #[graphql(name = "type")]
+    pub event_type: InputEventType,
+    /// Key name (for KEY type)
+    pub key: Option<String>,
+    /// Button number (for MOUSE_BUTTON / JOY_BUTTON)
+    pub button: Option<i32>,
+    /// Device number (for gamepad)
+    pub device: Option<i32>,
+}
+
+/// Input event type enumeration
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum)]
+pub enum InputEventType {
+    Key,
+    MouseButton,
+    JoyButton,
+    JoyAxis,
+}
+
+/// Input for setting a project setting
+#[derive(Debug, Clone, InputObject)]
+pub struct SetProjectSettingInput {
+    /// Setting path (e.g., "application/config/name", "display/window/size/width")
+    pub path: String,
+    /// Setting value (GDScript format string)
+    pub value: String,
+    /// Optional type hint
+    #[graphql(name = "type")]
+    pub value_type: Option<String>,
+}
+
+// ======================
 // Safe change flow
 // ======================
 

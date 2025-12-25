@@ -5,14 +5,14 @@
 use std::fs;
 
 use crate::godot::tscn::GodotScene;
+use crate::path_utils;
 
 use super::context::GqlContext;
-use super::script_resolver::res_path_to_fs_path;
 use super::types::*;
 
 /// Resolve scene from file path
 pub fn resolve_scene(ctx: &GqlContext, res_path: &str) -> Option<Scene> {
-    let file_path = res_path_to_fs_path(&ctx.project_path, res_path);
+    let file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, res_path);
     let content = fs::read_to_string(&file_path).ok()?;
     let godot_scene = GodotScene::parse(&content).ok()?;
 
@@ -91,8 +91,7 @@ pub fn create_scene(ctx: &GqlContext, input: &CreateSceneInput) -> SceneResult {
     let project_path = &ctx.project_path;
 
     // Convert res:// path to filesystem path
-    let relative_path = input.path.strip_prefix("res://").unwrap_or(&input.path);
-    let file_path = project_path.join(relative_path);
+    let file_path = path_utils::to_fs_path_unchecked(project_path, &input.path);
 
     // Check if file already exists
     if file_path.exists() {

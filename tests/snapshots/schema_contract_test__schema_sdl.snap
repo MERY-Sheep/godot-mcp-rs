@@ -2,6 +2,20 @@
 source: tests/schema_contract_test.rs
 expression: sdl
 ---
+"""
+Input for adding an input action to the InputMap
+"""
+input AddInputActionInput {
+	"""
+	Action name (e.g., "jump", "move_left")
+	"""
+	actionName: String!
+	"""
+	Events to associate with this action
+	"""
+	events: [InputEventInput!]!
+}
+
 input AddNodeInput {
 	parent: String!
 	name: String!
@@ -404,6 +418,38 @@ type GraphStats {
 }
 
 """
+Input event definition
+"""
+input InputEventInput {
+	"""
+	Event type
+	"""
+	type: InputEventType!
+	"""
+	Key name (for KEY type)
+	"""
+	key: String
+	"""
+	Button number (for MOUSE_BUTTON / JOY_BUTTON)
+	"""
+	button: Int
+	"""
+	Device number (for gamepad)
+	"""
+	device: Int
+}
+
+"""
+Input event type enumeration
+"""
+enum InputEventType {
+	KEY
+	MOUSE_BUTTON
+	JOY_BUTTON
+	JOY_AXIS
+}
+
+"""
 Input handler type
 """
 enum InputHandlerType {
@@ -484,6 +530,14 @@ type MutationRoot {
 	saveScene: OperationResult!
 	openScene(path: String!): OperationResult!
 	runTests(input: RunTestsInput!): TestExecutionResult!
+	"""
+	Add an input action to the InputMap
+	"""
+	addInputAction(input: AddInputActionInput!): OperationResult!
+	"""
+	Set a project setting
+	"""
+	setProjectSetting(input: SetProjectSettingInput!): OperationResult!
 	pause: OperationResult!
 	resume: OperationResult!
 	step: OperationResult!
@@ -838,6 +892,24 @@ type ScriptResult {
 	success: Boolean!
 	script: Script
 	message: String
+}
+
+"""
+Input for setting a project setting
+"""
+input SetProjectSettingInput {
+	"""
+	Setting path (e.g., "application/config/name", "display/window/size/width")
+	"""
+	path: String!
+	"""
+	Setting value (GDScript format string)
+	"""
+	value: String!
+	"""
+	Optional type hint
+	"""
+	type: String
 }
 
 input SetPropertyInput {

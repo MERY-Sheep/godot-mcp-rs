@@ -6,15 +6,15 @@ use std::fs;
 use std::path::Path;
 
 use crate::godot::gdscript::GDScript;
+use crate::path_utils;
 
 use super::context::GqlContext;
 use super::project_resolver::{collect_project_files, to_res_path};
-use super::script_resolver::res_path_to_fs_path;
 use super::types::*;
 
 /// Get class hierarchy for a script
 pub fn resolve_class_hierarchy(ctx: &GqlContext, script_path: &str) -> ClassHierarchy {
-    let file_path = res_path_to_fs_path(&ctx.project_path, script_path);
+    let file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, script_path);
 
     let mut extends_chain = Vec::new();
     let mut class_name = None;
@@ -36,7 +36,7 @@ pub fn resolve_class_hierarchy(ctx: &GqlContext, script_path: &str) -> ClassHier
                 if extends.starts_with("res://") || extends.ends_with(".gd") {
                     // It's a script path
                     let ext_path = if extends.starts_with("res://") {
-                        res_path_to_fs_path(&ctx.project_path, extends)
+                        path_utils::to_fs_path_unchecked(&ctx.project_path, extends)
                     } else {
                         path.parent().unwrap_or(Path::new(".")).join(extends)
                     };
@@ -103,7 +103,7 @@ pub fn resolve_find_references(
             }
         }
 
-        let file_path = res_path_to_fs_path(&ctx.project_path, &script_file.path);
+        let file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, &script_file.path);
         if let Ok(content) = fs::read_to_string(&file_path) {
             for (line_num, line) in content.lines().enumerate() {
                 if regex.is_match(line) {
@@ -220,7 +220,7 @@ pub fn resolve_rename_symbol(ctx: &GqlContext, input: &RenameSymbolInput) -> Ren
             }
         }
 
-        let file_path = res_path_to_fs_path(&ctx.project_path, &script_file.path);
+        let file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, &script_file.path);
         if let Ok(content) = fs::read_to_string(&file_path) {
             let new_content = regex.replace_all(&content, input.new_name.as_str());
 
@@ -263,7 +263,7 @@ pub fn resolve_extract_function(
     ctx: &GqlContext,
     input: &ExtractFunctionInput,
 ) -> ExtractFunctionResult {
-    let file_path = res_path_to_fs_path(&ctx.project_path, &input.script_path);
+    let file_path = path_utils::to_fs_path_unchecked(&ctx.project_path, &input.script_path);
 
     let content = match fs::read_to_string(&file_path) {
         Ok(c) => c,

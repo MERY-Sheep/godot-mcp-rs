@@ -281,6 +281,28 @@ impl MutationRoot {
         resolver::resolve_run_tests(gql_ctx, &input).await
     }
 
+    // ========== Phase 2.2: Project Settings & Input Map ==========
+
+    /// Add an input action to the InputMap
+    async fn add_input_action(
+        &self,
+        ctx: &Context<'_>,
+        input: AddInputActionInput,
+    ) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        resolver::resolve_add_input_action(gql_ctx, &input)
+    }
+
+    /// Set a project setting
+    async fn set_project_setting(
+        &self,
+        ctx: &Context<'_>,
+        input: SetProjectSettingInput,
+    ) -> OperationResult {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        resolver::resolve_set_project_setting(gql_ctx, &input)
+    }
+
     // ========== Debugging Operations (Phase 2) ==========
 
     async fn pause(&self, ctx: &Context<'_>) -> OperationResult {

@@ -177,6 +177,234 @@ pub fn validate_project(
     }
 }
 
+// ======================
+// Phase 2.2: Input Action & Project Settings
+// ======================
+
+/// Add an input action to the project's InputMap
+/// This modifies the project.godot file's [input] section
+pub fn resolve_add_input_action(ctx: &GqlContext, input: &AddInputActionInput) -> OperationResult {
+    // Validate action name
+    if input.action_name.is_empty() {
+        return OperationResult::err_msg("Action name cannot be empty");
+    }
+
+    let project_godot = ctx.project_path.join("project.godot");
+    if !project_godot.exists() {
+        return OperationResult::err_msg("project.godot not found");
+    }
+
+    // Read current project.godot
+    let content = match fs::read_to_string(&project_godot) {
+        Ok(c) => c,
+        Err(e) => return OperationResult::err_msg(format!("Failed to read project.godot: {}", e)),
+    };
+
+    // Build input action entry
+    let action_key = format!("input/{}", input.action_name);
+
+    // Check if action already exists
+    if content
+        .lines()
+        .any(|line| line.starts_with(&format!("{}=", action_key)))
+    {
+        return OperationResult::err_msg(format!(
+            "Input action '{}' already exists",
+            input.action_name
+        ));
+    }
+
+    // Build events string for Godot 4.x format
+    let events: Vec<String> = input.events.iter().map(|e| format_input_event(e)).collect();
+
+    let action_value = format!(
+        r#"{{
+"deadzone": 0.5,
+"events": [{}]
+}}"#,
+        events.join(", ")
+    );
+
+    // Find [input] section or create it
+    let mut new_content = String::new();
+    let mut found_input_section = false;
+    let mut in_input_section = false;
+    let mut inserted = false;
+
+    for line in content.lines() {
+        if line.trim() == "[input]" {
+            found_input_section = true;
+            in_input_section = true;
+            new_content.push_str(line);
+            new_content.push('\n');
+            continue;
+        }
+
+        if in_input_section && line.starts_with('[') && line != "[input]" {
+            // End of input section, insert new action before next section
+            if !inserted {
+                new_content.push_str(&format!("{}={}\n", action_key, action_value));
+                inserted = true;
+            }
+            in_input_section = false;
+        }
+
+        new_content.push_str(line);
+        new_content.push('\n');
+    }
+
+    // If no [input] section found, add it at the end
+    if !found_input_section {
+        new_content.push_str("\n[input]\n");
+        new_content.push_str(&format!("{}={}\n", action_key, action_value));
+    } else if !inserted {
+        // [input] was the last section
+        new_content.push_str(&format!("{}={}\n", action_key, action_value));
+    }
+
+    // Write back
+    if let Err(e) = fs::write(&project_godot, new_content) {
+        return OperationResult::err_msg(format!("Failed to write project.godot: {}", e));
+    }
+
+    OperationResult::ok()
+}
+
+/// Format a single input event for project.godot
+fn format_input_event(event: &InputEventInput) -> String {
+    match event.event_type {
+        InputEventType::Key => {
+            let key = event.key.as_deref().unwrap_or("Unknown");
+            format!(
+                r#"Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":{},"key_label":0,"unicode":0,"echo":false)"#,
+                key_name_to_godot_keycode(key)
+            )
+        }
+        InputEventType::MouseButton => {
+            let button = event.button.unwrap_or(1);
+            format!(
+                r#"Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":0,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":{},"canceled":false,"pressed":false,"double_click":false)"#,
+                button
+            )
+        }
+        InputEventType::JoyButton => {
+            let button = event.button.unwrap_or(0);
+            let device = event.device.unwrap_or(0);
+            format!(
+                r#"Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":{},"button_index":{},"pressure":0.0,"pressed":false)"#,
+                device, button
+            )
+        }
+        InputEventType::JoyAxis => {
+            let button = event.button.unwrap_or(0);
+            let device = event.device.unwrap_or(0);
+            format!(
+                r#"Object(InputEventJoypadMotion,"resource_local_to_scene":false,"resource_name":"","device":{},"axis":{},"axis_value":0.0)"#,
+                device, button
+            )
+        }
+    }
+}
+
+/// Convert key name to Godot keycode
+fn key_name_to_godot_keycode(key: &str) -> i32 {
+    match key.to_uppercase().as_str() {
+        "SPACE" => 32,
+        "A" => 65,
+        "B" => 66,
+        "C" => 67,
+        "D" => 68,
+        "E" => 69,
+        "F" => 70,
+        "W" => 87,
+        "S" => 83,
+        "Q" => 81,
+        "LEFT" => 4194319,
+        "RIGHT" => 4194321,
+        "UP" => 4194320,
+        "DOWN" => 4194322,
+        "ENTER" | "RETURN" => 4194309,
+        "ESCAPE" | "ESC" => 4194305,
+        "TAB" => 4194306,
+        "SHIFT" => 4194325,
+        "CTRL" | "CONTROL" => 4194326,
+        "ALT" => 4194328,
+        _ => 0, // Unknown key
+    }
+}
+
+/// Set a project setting in project.godot
+pub fn resolve_set_project_setting(
+    ctx: &GqlContext,
+    input: &SetProjectSettingInput,
+) -> OperationResult {
+    // Validate path
+    if input.path.is_empty() {
+        return OperationResult::err_msg("Setting path cannot be empty");
+    }
+
+    let project_godot = ctx.project_path.join("project.godot");
+    if !project_godot.exists() {
+        return OperationResult::err_msg("project.godot not found");
+    }
+
+    // Read current project.godot
+    let content = match fs::read_to_string(&project_godot) {
+        Ok(c) => c,
+        Err(e) => return OperationResult::err_msg(format!("Failed to read project.godot: {}", e)),
+    };
+
+    // Parse the path to find section and key
+    let parts: Vec<&str> = input.path.split('/').collect();
+    if parts.len() < 2 {
+        return OperationResult::err_msg("Invalid setting path format (expected: section/key)");
+    }
+
+    let section = format!("[{}]", parts[0]);
+    let key = parts[1..].join("/");
+
+    let mut new_content = String::new();
+    let mut in_target_section = false;
+    let mut found_key = false;
+
+    for line in content.lines() {
+        // Check for section header
+        if line.trim().starts_with('[') && line.trim().ends_with(']') {
+            // If leaving target section without finding key, insert it
+            if in_target_section && !found_key {
+                new_content.push_str(&format!("{}={}\n", key, input.value));
+                found_key = true;
+            }
+            in_target_section = line.trim() == section;
+        }
+
+        // Check for existing key in target section
+        if in_target_section && line.starts_with(&format!("{}=", key)) {
+            new_content.push_str(&format!("{}={}\n", key, input.value));
+            found_key = true;
+            continue;
+        }
+
+        new_content.push_str(line);
+        new_content.push('\n');
+    }
+
+    // If section not found, add it
+    if !found_key {
+        if !content.contains(&section) {
+            new_content.push_str(&format!("\n{}\n", section));
+        }
+        new_content.push_str(&format!("{}={}\n", key, input.value));
+    }
+
+    // Write back
+    if let Err(e) = fs::write(&project_godot, new_content) {
+        return OperationResult::err_msg(format!("Failed to write project.godot: {}", e));
+    }
+
+    OperationResult::ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

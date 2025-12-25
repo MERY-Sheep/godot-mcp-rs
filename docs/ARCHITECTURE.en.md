@@ -59,16 +59,35 @@ flowchart TB
     EditorCore <--> FS
 ```
 
-## Tool Categories (58 tools total)
+## Tool Categories
 
-| Category             | Tools | Key Features                                               |
-| :------------------- | :---: | :--------------------------------------------------------- |
-| **Live (Real-time)** |  24   | Editor operations (add, remove, group, anim, signal, etc.) |
-| **Editor/Run**       |   6   | Run project, stop, get logs, check version                 |
-| **Project**          |   7   | File exploration, search, stats, validation, node info     |
-| **Scene**            |  13   | File-based create, read, edit, compare, templates          |
-| **Script**           |   6   | File-based create, parse, add function/variable            |
-| **Resource**         |   2   | Resource list, parsing                                     |
+### MCP Public Tools (Available via MCP Server)
+
+The tools that can be directly called from AI (Claude Desktop / Cursor, etc.) via the MCP protocol are limited to the following **3 tools**.
+
+| Tool Name          | Description                                                                  |
+| :----------------- | :--------------------------------------------------------------------------- |
+| `godot_query`      | Execute GraphQL queries (read project info, scenes, scripts)                 |
+| `godot_mutate`     | Execute GraphQL mutations (add nodes, change properties, create files, etc.) |
+| `godot_introspect` | Get GraphQL schema (SDL or introspection format)                             |
+
+> **Note**: These tools provide a GraphQL interface, and actual operations (adding nodes, creating scenes, etc.) are defined as mutations within the GraphQL schema. Use `godot_introspect` to get a list of available operations.
+
+### CLI/Legacy Tools (Internal Implementation, CLI-only)
+
+The following tool groups are implemented but **not exposed as MCP server tools**. They are only available via CLI mode (`godot-mcp-rs tool <command>`).
+
+| Category             | Tools  | Key Features                                               |
+| :------------------- | :----: | :--------------------------------------------------------- |
+| **Live (Real-time)** |   24   | Editor operations (add, remove, group, anim, signal, etc.) |
+| **Editor/Run**       |   6    | Run project, stop, get logs, check version                 |
+| **Project**          |   7    | File exploration, search, stats, validation, node info     |
+| **Scene**            |   13   | File-based create, read, edit, compare, templates          |
+| **Script**           |   6    | File-based create, parse, add function/variable            |
+| **Resource**         |   2    | Resource list, parsing                                     |
+| **Total**            | **58** |                                                            |
+
+> **Note**: The functionality of these legacy tools is available through GraphQL mutations (`godot_mutate`). We recommend using them via MCP.
 
 ## Major Components
 
@@ -86,6 +105,15 @@ Parses Godot's custom serialization formats (TSCN/TRES) in Rust.
 
 - Allows for large-scale refactoring and scene structure analysis even when the editor is not running.
 
-### 3. Process Control Layer
+### 3. Path Utilities (`src/path_utils.rs`)
+
+Provides common utilities for converting between `res://` paths and filesystem paths, with path traversal protection.
+
+- **ResPath type**: Safe resource path representation (`..` detection, absolute path rejection)
+- **to_fs_path()**: `res://` → filesystem path (with validation)
+- **to_res_path()**: filesystem path → `res://`
+- **validate_within_project()**: Prevents access outside project using `canonicalize()`
+
+### 4. Process Control Layer
 
 Uses `.godot_mcp_pid` and `.godot_mcp_output` files to persist Godot execution process survival checks and log outputs across stateless MCP connections.

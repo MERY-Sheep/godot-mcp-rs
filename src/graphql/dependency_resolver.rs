@@ -9,6 +9,7 @@ use std::path::Path;
 use regex::Regex;
 
 use crate::godot::tscn::GodotScene;
+use crate::path_utils;
 
 use super::context::GqlContext;
 use super::resolver::{resolve_scene, resolve_script};
@@ -36,7 +37,8 @@ pub fn build_dependency_graph(ctx: &GqlContext) -> (Vec<GraphNode>, Vec<GraphEdg
 
     // Add scene nodes
     for scene_path in &scenes {
-        let res_path = to_res_path(&ctx.project_path, scene_path);
+        let res_path = path_utils::to_res_path(&ctx.project_path, scene_path)
+            .unwrap_or_else(|_| scene_path.to_string_lossy().to_string());
         nodes.insert(
             res_path.clone(),
             GraphNode {
@@ -74,7 +76,8 @@ pub fn build_dependency_graph(ctx: &GqlContext) -> (Vec<GraphNode>, Vec<GraphEdg
 
     // Add script nodes
     for script_path in &scripts {
-        let res_path = to_res_path(&ctx.project_path, script_path);
+        let res_path = path_utils::to_res_path(&ctx.project_path, script_path)
+            .unwrap_or_else(|_| script_path.to_string_lossy().to_string());
         nodes.insert(
             res_path.clone(),
             GraphNode {
@@ -179,22 +182,6 @@ fn collect_files_recursive(
             }
         }
     }
-}
-
-/// Convert filesystem path to res:// path
-fn to_res_path(project_root: &Path, file_path: &Path) -> String {
-    let relative = file_path
-        .strip_prefix(project_root)
-        .unwrap_or(file_path)
-        .to_string_lossy()
-        .replace('\\', "/");
-    format!("res://{}", relative)
-}
-
-/// Convert res:// path to filesystem path
-fn res_path_to_fs_path(project_root: &Path, res_path: &str) -> std::path::PathBuf {
-    let relative = res_path.strip_prefix("res://").unwrap_or(res_path);
-    project_root.join(relative)
 }
 
 // ======================
@@ -435,7 +422,7 @@ fn collect_dependencies(
         return;
     }
 
-    let fs_path = res_path_to_fs_path(&ctx.project_path, path);
+    let fs_path = path_utils::to_fs_path_unchecked(&ctx.project_path, path);
     let deps = if path.ends_with(".tscn") || path.ends_with(".scn") {
         extract_scene_dependencies(&fs_path)
     } else if path.ends_with(".gd") {
@@ -520,7 +507,8 @@ fn find_dependents(ctx: &GqlContext, target_path: &str) -> Vec<ContextItem> {
 
     // Check scenes
     for scene_path in scenes {
-        let res_path = to_res_path(&ctx.project_path, &scene_path);
+        let res_path = path_utils::to_res_path(&ctx.project_path, &scene_path)
+            .unwrap_or_else(|_| scene_path.to_string_lossy().to_string());
         if res_path == target_path {
             continue;
         }
@@ -538,7 +526,8 @@ fn find_dependents(ctx: &GqlContext, target_path: &str) -> Vec<ContextItem> {
 
     // Check scripts
     for script_path in scripts {
-        let res_path = to_res_path(&ctx.project_path, &script_path);
+        let res_path = path_utils::to_res_path(&ctx.project_path, &script_path)
+            .unwrap_or_else(|_| script_path.to_string_lossy().to_string());
         if res_path == target_path {
             continue;
         }
@@ -560,7 +549,7 @@ fn find_dependents(ctx: &GqlContext, target_path: &str) -> Vec<ContextItem> {
 /// Collect resource references from a file
 fn collect_resources(ctx: &GqlContext, path: &str) -> Vec<ResourceInfo> {
     let mut resources = Vec::new();
-    let fs_path = res_path_to_fs_path(&ctx.project_path, path);
+    let fs_path = path_utils::to_fs_path_unchecked(&ctx.project_path, path);
 
     if path.ends_with(".tscn") || path.ends_with(".scn") {
         if let Ok(content) = fs::read_to_string(&fs_path) {
