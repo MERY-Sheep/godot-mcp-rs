@@ -9,8 +9,17 @@ use rmcp::{model::CallToolResult, ErrorData as McpError};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::sync::OnceLock;
 
-use crate::graphql::{build_schema_with_context, GqlContext};
+use crate::graphql::{build_schema, GqlContext, GqlSchema};
+
+/// Global cached schema instance
+static SCHEMA: OnceLock<GqlSchema> = OnceLock::new();
+
+/// Get the cached schema (initialized once)
+fn get_schema() -> &'static GqlSchema {
+    SCHEMA.get_or_init(build_schema)
+}
 
 /// Request for executing a GraphQL query
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
@@ -49,16 +58,14 @@ pub async fn handle_godot_query(
         None => return Err(McpError::invalid_params("Missing request parameters", None)),
     };
 
+    let schema = get_schema();
     let ctx = GqlContext::new(base_path.to_path_buf());
-    let schema = build_schema_with_context(ctx);
 
-    // Build request with optional variables
-    let gql_request = if let Some(vars) = request.variables {
-        async_graphql::Request::new(&request.query)
-            .variables(async_graphql::Variables::from_json(vars))
-    } else {
-        async_graphql::Request::new(&request.query)
-    };
+    // Build request with context and optional variables
+    let mut gql_request = async_graphql::Request::new(&request.query).data(ctx);
+    if let Some(vars) = request.variables {
+        gql_request = gql_request.variables(async_graphql::Variables::from_json(vars));
+    }
 
     let response = schema.execute(gql_request).await;
 
@@ -83,16 +90,14 @@ pub async fn handle_godot_mutate(
         None => return Err(McpError::invalid_params("Missing request parameters", None)),
     };
 
+    let schema = get_schema();
     let ctx = GqlContext::new(base_path.to_path_buf());
-    let schema = build_schema_with_context(ctx);
 
-    // Build request with optional variables
-    let gql_request = if let Some(vars) = request.variables {
-        async_graphql::Request::new(&request.mutation)
-            .variables(async_graphql::Variables::from_json(vars))
-    } else {
-        async_graphql::Request::new(&request.mutation)
-    };
+    // Build request with context and optional variables
+    let mut gql_request = async_graphql::Request::new(&request.mutation).data(ctx);
+    if let Some(vars) = request.variables {
+        gql_request = gql_request.variables(async_graphql::Variables::from_json(vars));
+    }
 
     let response = schema.execute(gql_request).await;
 
@@ -107,7 +112,7 @@ pub async fn handle_godot_mutate(
 
 /// Get the GraphQL schema
 pub async fn handle_godot_introspect(
-    base_path: &Path,
+    _base_path: &Path,
     args: Option<serde_json::Map<String, serde_json::Value>>,
 ) -> Result<CallToolResult, McpError> {
     let request: GqlIntrospectRequest = match args {
@@ -115,9 +120,7 @@ pub async fn handle_godot_introspect(
         None => GqlIntrospectRequest::default(),
     };
 
-    let ctx = GqlContext::new(base_path.to_path_buf());
-    let schema = build_schema_with_context(ctx);
-
+    let schema = get_schema();
     let format = request.format.unwrap_or_else(|| "SDL".to_string());
 
     let result = match format.to_uppercase().as_str() {
@@ -176,6 +179,16 @@ pub async fn handle_godot_introspect(
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    #[test]
+    fn test_schema_is_cached() {
+        // First access initializes the schema
+        let schema1 = get_schema();
+        // Second access returns the same instance
+        let schema2 = get_schema();
+        // They should be the same pointer
+        assert!(std::ptr::eq(schema1, schema2));
+    }
 
     #[tokio::test]
     async fn test_handle_godot_query_project() {

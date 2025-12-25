@@ -26,36 +26,17 @@ impl GodotTools {
         port: Option<u16>,
         command: GodotCommand,
     ) -> Result<CallToolResult, McpError> {
-        // #region agent log
-        let log_path = ".cursor/debug.log";
-        let _cmd_json = serde_json::to_string(&command).unwrap_or_default();
-        let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-            use std::io::Write;
-            writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live:entry\",\"message\":\"execute_live entry\",\"data\":{{\"port\":{:?},\"command_type\":\"{:?}\"}},\"timestamp\":{}}}", port, std::mem::discriminant(&command), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-        });
-        // #endregion
-
         let base_port = port.unwrap_or(6060);
         let ws_port = port.unwrap_or(6061); // WebSocket uses 6061 by default
 
         // Try WebSocket first
         match self.execute_live_ws(ws_port, &command).await {
             Ok(result) => {
-                // #region agent log
-                let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-                    use std::io::Write;
-                    writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live:ws_success\",\"message\":\"WebSocket request success\",\"data\":{{}},\"timestamp\":{}}}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-                });
-                // #endregion
+                tracing::debug!("WebSocket request succeeded");
                 return Ok(result);
             }
             Err(_ws_err) => {
-                // #region agent log
-                let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-                    use std::io::Write;
-                    writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live:ws_fallback\",\"message\":\"WebSocket failed, falling back to HTTP\",\"data\":{{}},\"timestamp\":{}}}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-                });
-                // #endregion
+                tracing::debug!("WebSocket failed, falling back to HTTP");
                 // Fall through to HTTP
             }
         }
@@ -87,15 +68,7 @@ impl GodotTools {
         port: u16,
         command: &GodotCommand,
     ) -> Result<CallToolResult, McpError> {
-        let log_path = ".cursor/debug.log";
         let url = format!("http://localhost:{}", port);
-
-        // #region agent log
-        let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-            use std::io::Write;
-            writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live_http:before_request\",\"message\":\"before HTTP request\",\"data\":{{\"url\":\"{}\",\"port\":{}}},\"timestamp\":{}}}", url, port, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-        });
-        // #endregion
 
         let client = reqwest::Client::new();
         let response = client
@@ -105,40 +78,15 @@ impl GodotTools {
             .send()
             .await
             .map_err(|e| {
-                // #region agent log
-                let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-                    use std::io::Write;
-                    writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live_http:connection_error\",\"message\":\"HTTP connection error\",\"data\":{{\"error\":\"{}\"}},\"timestamp\":{}}}", e, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-                });
-                // #endregion
                 McpError::internal_error(format!("Failed to connect to Godot plugin: {}", e), None)
             })?;
 
         let status = response.status();
         let text = response.text().await.unwrap_or_default();
 
-        // #region agent log
-        let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-            use std::io::Write;
-            writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live_http:after_response\",\"message\":\"after HTTP response\",\"data\":{{\"status\":{},\"text_len\":{}}},\"timestamp\":{}}}", status.as_u16(), text.len(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-        });
-        // #endregion
-
         if status.is_success() {
-            // #region agent log
-            let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-                use std::io::Write;
-                writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live_http:success\",\"message\":\"HTTP request success\",\"data\":{{}},\"timestamp\":{}}}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-            });
-            // #endregion
             Ok(CallToolResult::success(vec![Content::text(text)]))
         } else {
-            // #region agent log
-            let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-                use std::io::Write;
-                writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"live.rs:execute_live_http:error_status\",\"message\":\"HTTP error status\",\"data\":{{\"status\":{},\"text\":\"{}\"}},\"timestamp\":{}}}", status.as_u16(), text.chars().take(200).collect::<String>(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-            });
-            // #endregion
             Err(McpError::internal_error(
                 format!("Godot plugin error ({}): {}", status, text),
                 None,
@@ -150,30 +98,10 @@ impl GodotTools {
         &self,
         args: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<CallToolResult, McpError> {
-        // #region agent log
-        let log_path = ".cursor/debug.log";
-        let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-            use std::io::Write;
-            writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"B\",\"location\":\"live.rs:handle_live_ping:entry\",\"message\":\"handle_live_ping entry\",\"data\":{{\"args_present\":{}}},\"timestamp\":{}}}", args.is_some(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-        });
-        // #endregion
         let req: LivePingRequest =
             serde_json::from_value(serde_json::Value::Object(args.unwrap_or_default()))
                 .unwrap_or_default();
-        // #region agent log
-        let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-            use std::io::Write;
-            writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"B\",\"location\":\"live.rs:handle_live_ping:before_execute\",\"message\":\"before execute_live\",\"data\":{{\"port\":{:?}}},\"timestamp\":{}}}", req.port, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-        });
-        // #endregion
-        let result = self.execute_live(req.port, GodotCommand::Ping).await;
-        // #region agent log
-        let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).and_then(|mut f| {
-            use std::io::Write;
-            writeln!(f, "{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"B\",\"location\":\"live.rs:handle_live_ping:exit\",\"message\":\"handle_live_ping exit\",\"data\":{{\"success\":{}}},\"timestamp\":{}}}", result.is_ok(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis())
-        });
-        // #endregion
-        result
+        self.execute_live(req.port, GodotCommand::Ping).await
     }
 
     pub async fn handle_live_add_node(

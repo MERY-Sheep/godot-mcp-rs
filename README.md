@@ -11,7 +11,18 @@ It provides a powerful GraphQL API that seamlessly integrates static project ana
 
 ## 🛠️ Core Toolset (GraphQL API)
 
-All Godot operations are consolidated into 3 versatile GraphQL tools, allowing LLMs to manipulate projects with minimal context overhead:
+All Godot operations are consolidated into **3 GraphQL tools** exposed via MCP. This minimal interface allows LLMs to perform any operation with a single, consistent API:
+
+| Tool               | Description                                         |
+| :----------------- | :-------------------------------------------------- |
+| `godot_query`      | Read-only queries (project info, scene structure)   |
+| `godot_mutate`     | Modification operations (add nodes, set properties) |
+| `godot_introspect` | Get API schema (SDL or introspection)               |
+
+> **Note**: Individual operations (like `addNode`, `setProperty`) are GraphQL **fields**, not separate MCP tools.
+> Use `godot_introspect` to discover all available operations.
+
+### What You Can Do
 
 1. **`godot_query`**: Read-only operations.
 

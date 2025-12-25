@@ -82,7 +82,7 @@ impl QueryRoot {
     }
 
     /// Get logs
-    async fn logs(&self, ctx: &Context<'_>, limit: Option<i32>) -> Vec<LogEntry> {
+    async fn logs(&self, ctx: &Context<'_>, #[graphql(default = 100)] limit: i32) -> Vec<LogEntry> {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         live_resolver::resolve_logs(gql_ctx, limit).await
     }
@@ -105,7 +105,7 @@ impl QueryRoot {
     async fn stack_frame_vars(
         &self,
         ctx: &Context<'_>,
-        frame_index: Option<i32>,
+        #[graphql(default = 0)] frame_index: i32,
     ) -> Vec<StackVariable> {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         live_resolver::resolve_stack_frame_vars(gql_ctx, frame_index).await
@@ -479,9 +479,7 @@ pub fn build_schema_with_context(ctx: GqlContext) -> GqlSchema {
 
 /// Build the GraphQL schema (for tests without context)
 pub fn build_schema() -> GqlSchema {
-    use std::path::PathBuf;
-    let ctx = GqlContext::new(PathBuf::from("."));
-    build_schema_with_context(ctx)
+    Schema::build(QueryRoot, MutationRoot, EmptySubscription).finish()
 }
 
 #[cfg(test)]

@@ -391,8 +391,7 @@ pub async fn resolve_debugger_errors(ctx: &GqlContext) -> Vec<DebuggerError> {
     }
 }
 
-pub async fn resolve_logs(ctx: &GqlContext, limit: Option<i32>) -> Vec<LogEntry> {
-    let limit = limit.unwrap_or(100);
+pub async fn resolve_logs(ctx: &GqlContext, limit: i32) -> Vec<LogEntry> {
     let result = execute_live_command(ctx, GodotLiveCommand::GetLogs { limit }).await;
     match result {
         Ok(val) => serde_json::from_value(val).unwrap_or_default(),
@@ -424,7 +423,7 @@ pub async fn resolve_set_breakpoint(ctx: &GqlContext, input: BreakpointInput) ->
     let command = GodotLiveCommand::SetBreakpoint {
         path: input.path,
         line: input.line,
-        enabled: input.enabled.unwrap_or(true),
+        enabled: input.enabled,
     };
     execute_simple_command(ctx, command).await
 }
@@ -466,13 +465,8 @@ pub async fn resolve_parse_errors(ctx: &GqlContext, script_path: String) -> Vec<
 }
 
 /// Resolve stackFrameVars query - get local variables from stack frame during debugging
-pub async fn resolve_stack_frame_vars(
-    ctx: &GqlContext,
-    frame_index: Option<i32>,
-) -> Vec<StackVariable> {
-    let command = GodotLiveCommand::GetStackFrameVars {
-        frame_index: frame_index.unwrap_or(0),
-    };
+pub async fn resolve_stack_frame_vars(ctx: &GqlContext, frame_index: i32) -> Vec<StackVariable> {
+    let command = GodotLiveCommand::GetStackFrameVars { frame_index };
     match execute_live_command(ctx, command).await {
         Ok(val) => {
             // Try to parse the variables array from the response

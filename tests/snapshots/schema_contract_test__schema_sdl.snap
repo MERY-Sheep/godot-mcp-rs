@@ -68,7 +68,7 @@ type AutoloadsResult {
 input BreakpointInput {
 	path: String!
 	line: Int!
-	enabled: Boolean
+	enabled: Boolean! = true
 }
 
 type ChangeSummary {
@@ -773,7 +773,7 @@ type QueryRoot {
 	"""
 	Get logs
 	"""
-	logs(limit: Int): [LogEntry!]!
+	logs(limit: Int! = 100): [LogEntry!]!
 	"""
 	Get object by ID
 	"""
@@ -785,7 +785,7 @@ type QueryRoot {
 	"""
 	Get stack frame variables during debugging (live)
 	"""
-	stackFrameVars(frameIndex: Int): [StackVariable!]!
+	stackFrameVars(frameIndex: Int! = 0): [StackVariable!]!
 	"""
 	Get class hierarchy for a script
 	"""

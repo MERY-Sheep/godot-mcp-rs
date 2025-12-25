@@ -1048,7 +1048,8 @@ pub struct GodotObject {
 pub struct BreakpointInput {
     pub path: String,
     pub line: i32,
-    pub enabled: Option<bool>,
+    #[graphql(default = true)]
+    pub enabled: bool,
 }
 
 // ======================

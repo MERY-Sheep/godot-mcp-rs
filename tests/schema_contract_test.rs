@@ -242,9 +242,17 @@ fn test_schema_matches_source_of_truth() {
 /// These queries should parse and validate against the schema.
 mod query_validation {
     use super::*;
+    use godot_mcp_rs::graphql::GqlContext;
+    use std::path::PathBuf;
+
+    fn test_context() -> GqlContext {
+        GqlContext::new(PathBuf::from("."))
+    }
 
     async fn validate_query(schema: &GqlSchema, query: &str) -> Result<(), String> {
-        let result = schema.execute(query).await;
+        let ctx = test_context();
+        let request = async_graphql::Request::new(query).data(ctx);
+        let result = schema.execute(request).await;
         if result.errors.is_empty() {
             Ok(())
         } else {
@@ -525,9 +533,17 @@ mod query_validation {
 /// Test: Representative mutations are syntactically valid
 mod mutation_validation {
     use super::*;
+    use godot_mcp_rs::graphql::GqlContext;
+    use std::path::PathBuf;
+
+    fn test_context() -> GqlContext {
+        GqlContext::new(PathBuf::from("."))
+    }
 
     async fn validate_mutation(schema: &GqlSchema, mutation: &str) -> Result<(), String> {
-        let result = schema.execute(mutation).await;
+        let ctx = test_context();
+        let request = async_graphql::Request::new(mutation).data(ctx);
+        let result = schema.execute(request).await;
         if result.errors.is_empty() {
             Ok(())
         } else {

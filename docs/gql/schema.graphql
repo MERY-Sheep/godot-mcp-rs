@@ -70,7 +70,7 @@ type Query {
   """
   ログを取得
   """
-  logs(limit: Int): [LogEntry!]!
+  logs(limit: Int! = 100): [LogEntry!]!
 
   """
   オブジェクトＩＤから詳細情報を取得
@@ -102,7 +102,7 @@ type Query {
   """
   スタックフレームのローカル変数を取得（デバッグ中）
   """
-  stackFrameVars(frameIndex: Int): [StackVariable!]!
+  stackFrameVars(frameIndex: Int! = 0): [StackVariable!]!
 }
 
 """
@@ -870,7 +870,7 @@ type GodotObject {
 input BreakpointInput {
   path: String!
   line: Int!
-  enabled: Boolean
+  enabled: Boolean = true
 }
 
 """
