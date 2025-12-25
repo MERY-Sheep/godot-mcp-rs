@@ -24,6 +24,7 @@ var _animation_handler
 var _debug_handler
 var _group_handler
 var _shader_handler
+var _introspect_handler
 
 # Command to handler mapping
 var _command_handlers: Dictionary = {}
@@ -41,6 +42,7 @@ func _load_handlers() -> void:
 	var DebugHandler = load("res://addons/godot_mcp/handlers/debug_handler.gd")
 	var GroupHandler = load("res://addons/godot_mcp/handlers/group_handler.gd")
 	var ShaderHandler = load("res://addons/godot_mcp/handlers/shader_handler.gd")
+	var IntrospectHandler = load("res://addons/godot_mcp/handlers/introspect_handler.gd")
 	
 	_node_handler = NodeHandler.new(plugin)
 	_scene_handler = SceneHandler.new(plugin)
@@ -50,6 +52,7 @@ func _load_handlers() -> void:
 	_debug_handler = DebugHandler.new(plugin)
 	_group_handler = GroupHandler.new(plugin)
 	_shader_handler = ShaderHandler.new(plugin)
+	_introspect_handler = IntrospectHandler.new(plugin)
 
 func _build_command_map() -> void:
 	# Node operations
@@ -103,6 +106,14 @@ func _build_command_map() -> void:
 	# Shader operations
 	_command_handlers["create_visual_shader_node"] = _shader_handler
 	_command_handlers["validate_shader_live"] = _shader_handler
+	
+	# Phase 3: Debug Enhanced
+	_command_handlers["get_parse_errors"] = _debug_handler
+	_command_handlers["get_stack_frame_vars"] = _debug_handler
+	
+	# Introspect operations (Phase 1: Dynamic Type Discovery)
+	_command_handlers["get_type_info"] = _introspect_handler
+	_command_handlers["list_all_types"] = _introspect_handler
 
 func handle_command(data: Dictionary) -> Dictionary:
 	var command = data.get("command", "")

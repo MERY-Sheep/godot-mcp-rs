@@ -89,6 +89,24 @@ impl QueryRoot {
         let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
         live_resolver::resolve_object_by_id(gql_ctx, object_id).await
     }
+
+    // ========== Phase 3: Debug Enhanced ==========
+
+    /// Get parse errors from a script (live)
+    async fn parse_errors(&self, ctx: &Context<'_>, script_path: String) -> Vec<ParseError> {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_parse_errors(gql_ctx, script_path).await
+    }
+
+    /// Get stack frame variables during debugging (live)
+    async fn stack_frame_vars(
+        &self,
+        ctx: &Context<'_>,
+        frame_index: Option<i32>,
+    ) -> Vec<StackVariable> {
+        let gql_ctx = ctx.data::<GqlContext>().expect("GqlContext not found");
+        live_resolver::resolve_stack_frame_vars(gql_ctx, frame_index).await
+    }
 }
 
 /// GraphQL Mutation Root

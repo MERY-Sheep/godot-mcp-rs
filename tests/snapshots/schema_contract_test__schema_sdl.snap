@@ -104,6 +104,14 @@ input DisconnectSignalInput {
 	method: String!
 }
 
+"""
+Error severity level
+"""
+enum ErrorSeverity {
+	ERROR
+	WARNING
+}
+
 type ExternalResource {
 	id: Int!
 	type: String!
@@ -410,6 +418,16 @@ enum OperationType {
 	ATTACH_SCRIPT
 }
 
+"""
+Parse error from GDScript compilation
+"""
+type ParseError {
+	line: Int!
+	column: Int!
+	message: String!
+	severity: ErrorSeverity!
+}
+
 input PlannedOperation {
 	type: OperationType!
 	args: JSON!
@@ -517,6 +535,14 @@ type QueryRoot {
 	Get object by ID
 	"""
 	objectById(objectId: String!): GodotObject
+	"""
+	Get parse errors from a script (live)
+	"""
+	parseErrors(scriptPath: String!): [ParseError!]!
+	"""
+	Get stack frame variables during debugging (live)
+	"""
+	stackFrameVars(frameIndex: Int): [StackVariable!]!
 }
 
 enum ReferenceType {
@@ -619,6 +645,15 @@ type StackFrame {
 	file: String!
 	line: Int!
 	function: String!
+}
+
+"""
+Stack variable during debugging
+"""
+type StackVariable {
+	name: String!
+	value: String!
+	type: String!
 }
 
 input TemplateSceneInput {

@@ -24,17 +24,18 @@ Undo/Redo に完全対応しており、AI による変更をエディターの�
 
 現在、以下のコマンドがリアルタイム操作に対応しています：
 
-| カテゴリ           | コマンド                                                                                          | Undo/Redo |
-| :----------------- | :------------------------------------------------------------------------------------------------ | :-------: |
-| **ノード**         | `add_node`, `remove_node`, `rename_node`, `duplicate_node`, `reparent_node`, `instantiate_scene`  |    ✅     |
-| **プロパティ**     | `set_property`                                                                                    |    ✅     |
-|                    | `get_properties`                                                                                  |     -     |
-| **シーン**         | `get_tree`, `save_scene`                                                                          |     -     |
-| **シグナル**       | `connect_signal`, `disconnect_signal`                                                             |    ✅     |
-|                    | `list_signals`                                                                                    |     -     |
-| **アニメーション** | `create_animation`                                                                                |    ✅     |
-|                    | `add_animation_track`, `add_animation_key`, `play_animation`, `stop_animation`, `list_animations` |     -     |
-| **デバッグ**       | `get_editor_log`, `clear_editor_log`                                                              |     -     |
+| カテゴリ                 | コマンド                                                                                          | Undo/Redo |
+| :----------------------- | :------------------------------------------------------------------------------------------------ | :-------: |
+| **ノード**               | `add_node`, `remove_node`, `rename_node`, `duplicate_node`, `reparent_node`, `instantiate_scene`  |    ✅     |
+| **プロパティ**           | `set_property`                                                                                    |    ✅     |
+|                          | `get_properties`                                                                                  |     -     |
+| **シーン**               | `get_tree`, `save_scene`                                                                          |     -     |
+| **シグナル**             | `connect_signal`, `disconnect_signal`                                                             |    ✅     |
+|                          | `list_signals`                                                                                    |     -     |
+| **アニメーション**       | `create_animation`                                                                                |    ✅     |
+|                          | `add_animation_track`, `add_animation_key`, `play_animation`, `stop_animation`, `list_animations` |     -     |
+| **デバッグ**             | `get_editor_log`, `clear_editor_log`, `get_parse_errors`, `get_stack_frame_vars`                  |     -     |
+| **イントロスペクション** | `get_type_info`, `list_all_types`                                                                 |     -     |
 
 ## Undo/Redo について
 

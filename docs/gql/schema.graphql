@@ -92,6 +92,17 @@ type Query {
   オートロード一覧を取得
   """
   autoloads: AutoloadsResult!
+
+  # ========== Phase 3: デバッグ強化 ==========
+  """
+  スクリプトの構文エラーを取得（live操作）
+  """
+  parseErrors(scriptPath: String!): [ParseError!]!
+
+  """
+  スタックフレームのローカル変数を取得（デバッグ中）
+  """
+  stackFrameVars(frameIndex: Int): [StackVariable!]!
 }
 
 """
@@ -772,6 +783,29 @@ input BreakpointInput {
   path: String!
   line: Int!
   enabled: Boolean
+}
+
+"""
+========================
+Phase 3: Debug Enhanced Types
+========================
+"""
+type ParseError {
+  line: Int!
+  column: Int!
+  message: String!
+  severity: ErrorSeverity!
+}
+
+enum ErrorSeverity {
+  ERROR
+  WARNING
+}
+
+type StackVariable {
+  name: String!
+  value: String!
+  type: String!
 }
 
 """

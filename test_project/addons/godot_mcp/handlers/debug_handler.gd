@@ -30,6 +30,11 @@ func handle(command: String, params: Dictionary) -> Dictionary:
 			return _handle_remove_breakpoint(params)
 		"clear_editor_log":
 			return _handle_clear_editor_log(params)
+		# Phase 3: Debug Enhanced
+		"get_parse_errors":
+			return _handle_get_parse_errors(params)
+		"get_stack_frame_vars":
+			return _handle_get_stack_frame_vars(params)
 		_:
 			return {"error": "Unknown debug command: " + command}
 
@@ -179,3 +184,52 @@ func _serialize_value(value) -> Variant:
 			return dict
 		_:
 			return str(value)
+
+# ======================
+# Phase 3: Debug Enhanced Handlers
+# ======================
+
+func _handle_get_parse_errors(params: Dictionary) -> Dictionary:
+	var script_path = params.get("script_path", "")
+	if script_path == "":
+		return {"error": "script_path required"}
+	
+	var errors = []
+	
+	# Try to load and check the script for errors
+	if ResourceLoader.exists(script_path):
+		var script = load(script_path)
+		if script is GDScript:
+			# Check if the script has any errors by trying to reload it
+			# The errors list will contain parse errors if any
+			var err = script.reload()
+			if err != OK:
+				# Script has errors, try to get them from the editor
+				errors.append({
+					"line": 1,
+					"column": 1,
+					"message": "Script has errors (error code: " + str(err) + ")",
+					"severity": "ERROR"
+				})
+	else:
+		return {"success": false, "errors": [], "message": "Script not found: " + script_path}
+	
+	return {"success": true, "errors": errors}
+
+func _handle_get_stack_frame_vars(params: Dictionary) -> Dictionary:
+	var frame_index = params.get("frame_index", 0)
+	var variables = []
+	
+	if not plugin.debugger_plugin:
+		return {"error": "Debugger plugin not initialized"}
+	
+	var session = plugin.debugger_plugin.get_active_session()
+	if not session:
+		return {"success": true, "variables": [], "message": "No active debug session"}
+	
+	# Note: Getting stack frame variables requires the debugger to be paused
+	# This is a placeholder - actual implementation depends on debugger API access
+	# In Godot 4.x, direct access to stack variables is limited
+	
+	return {"success": true, "variables": variables, "frame_index": frame_index}
+

@@ -966,6 +966,37 @@ pub struct BreakpointInput {
 }
 
 // ======================
+// Phase 3: Debug Enhanced Types
+// ======================
+
+/// Parse error from GDScript compilation
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize, Default)]
+pub struct ParseError {
+    pub line: i32,
+    pub column: i32,
+    pub message: String,
+    pub severity: ErrorSeverity,
+}
+
+/// Error severity level
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Enum, Serialize, Deserialize, Default)]
+pub enum ErrorSeverity {
+    #[default]
+    Error,
+    Warning,
+}
+
+/// Stack variable during debugging
+#[derive(Debug, Clone, SimpleObject, Serialize, Deserialize, Default)]
+pub struct StackVariable {
+    pub name: String,
+    pub value: String,
+    #[graphql(name = "type")]
+    #[serde(rename = "type")]
+    pub var_type: String,
+}
+
+// ======================
 // Phase 3: Code Understanding Types
 // ======================
 

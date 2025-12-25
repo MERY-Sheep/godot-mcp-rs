@@ -188,6 +188,18 @@ pub enum GodotLiveCommand {
     },
     #[serde(rename = "remove_breakpoint")]
     RemoveBreakpoint { path: String, line: i32 },
+
+    // Phase 3: Debug Enhanced Commands
+    #[serde(rename = "get_parse_errors")]
+    GetParseErrors { script_path: String },
+    #[serde(rename = "get_stack_frame_vars")]
+    GetStackFrameVars { frame_index: i32 },
+
+    // Phase 1: Dynamic Type Discovery Commands
+    #[serde(rename = "get_type_info")]
+    GetTypeInfo { type_name: String },
+    #[serde(rename = "list_all_types")]
+    ListAllTypes { parent_class: String },
 }
 
 // ======================
@@ -424,6 +436,43 @@ async fn execute_simple_command(ctx: &GqlContext, command: GodotLiveCommand) -> 
     match execute_live_command(ctx, command).await {
         Ok(_) => OperationResult::ok(),
         Err(e) => OperationResult::err(e.to_structured_error()),
+    }
+}
+
+// ======================
+// Phase 3: Debug Enhanced Resolvers
+// ======================
+
+/// Resolve parseErrors query - get syntax errors from a script
+pub async fn resolve_parse_errors(ctx: &GqlContext, script_path: String) -> Vec<ParseError> {
+    let command = GodotLiveCommand::GetParseErrors { script_path };
+    match execute_live_command(ctx, command).await {
+        Ok(val) => {
+            // Try to parse the errors array from the response
+            val.get("errors")
+                .and_then(|e| serde_json::from_value(e.clone()).ok())
+                .unwrap_or_default()
+        }
+        Err(_) => vec![],
+    }
+}
+
+/// Resolve stackFrameVars query - get local variables from stack frame during debugging
+pub async fn resolve_stack_frame_vars(
+    ctx: &GqlContext,
+    frame_index: Option<i32>,
+) -> Vec<StackVariable> {
+    let command = GodotLiveCommand::GetStackFrameVars {
+        frame_index: frame_index.unwrap_or(0),
+    };
+    match execute_live_command(ctx, command).await {
+        Ok(val) => {
+            // Try to parse the variables array from the response
+            val.get("variables")
+                .and_then(|v| serde_json::from_value(v.clone()).ok())
+                .unwrap_or_default()
+        }
+        Err(_) => vec![],
     }
 }
 
